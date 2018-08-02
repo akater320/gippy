@@ -145,7 +145,7 @@ namespace gip {
 
         //! \name Bands and colors
         //! Number of bands
-        unsigned int nbands() const { return _RasterBands.size(); }
+        size_t nbands() const { return _RasterBands.size(); }
         //! Get datatype of image (TODO - check all raster bands, return 'largest')
         //! Get vector of band names
         std::vector<std::string> bandnames() const { return _BandNames; }
@@ -165,7 +165,7 @@ namespace gip {
         GeoImage& set_bandnames(std::vector<std::string> names) {
 	       if (names.size() != nbands())
             	throw std::out_of_range("Band list size must be equal to # of bands");
-            for (unsigned int i=0; i<names.size(); i++) {
+            for (size_t i=0; i<names.size(); i++) {
                 try {
                     set_bandname(names[i], i+1);
                 } catch(...) {
