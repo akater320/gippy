@@ -258,7 +258,7 @@ namespace gip {
         psWarpOptions->papszWarpOptions = papszOptions;
 
         // if valid geometry apply it as a cutline
-        OGRGeometry* site_t;
+		OGRGeometry* site_t = nullptr;
         char **papszOptionsCutline = NULL;
         CutlineTransformer oTransformer;
         if (feature.valid()) {
