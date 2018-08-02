@@ -517,7 +517,7 @@ namespace gip {
 			double sampleOrig;
             cimg_forXY(img,x,y) {
 				sampleOrig = static_cast<double>(imgorig(x, y));
-				if (sampleOrig == nodata() || (std::_Is_floating_point<T>::value && (std::isinf(sampleOrig) || std::isnan(sampleOrig))))
+				if (sampleOrig == nodata() || (std::is_floating_point<T>::value && (std::isinf(sampleOrig) || std::isnan(sampleOrig))))
                     img(x,y) = nodata();
             }
         }
