@@ -319,7 +319,7 @@ bool _isSimple (const CImg<T> & img, int x, int y, int z ) const {
     // Seeking for a component
 
     // Look at X-axis
-    for (int k = -1; k<=1; ++k) {
+    for (int k = -1; k<=1; ++k)	{
       if (x + k<0 || x + k>=img.width()) continue;
 
       if (img(x + k,y,z)==0 && visit(1 + k,1,1)==0) {
@@ -338,7 +338,7 @@ bool _isSimple (const CImg<T> & img, int x, int y, int z ) const {
     }
 
     // Look at Y-axis
-    for (int k = -1; k<=1; ++k) {
+    for (int k = -1; k<=1; ++k)	{
       if (y + k<0 || y + k>=img.height()) continue;
 
       if (img(x,y + k,z)==0 && visit(1,1 + k,1)==0) {
@@ -382,7 +382,7 @@ bool _isSimple (const CImg<T> & img, int x, int y, int z ) const {
     }
 
     // Look at Z-axis
-    for (int k = -1; k<=1; ++k) {
+    for (int k = -1; k<=1; ++k)	{
       if (z + k<0 || z + k>=img.depth()) continue;
 
       if (img(x,y,z + k)==0 && visit(1,1,1 + k)==0) {
@@ -545,7 +545,7 @@ CImg<T> get_skeleton (const CImg<floatT> & flux,
     count(p.pos[0],p.pos[1],p.pos[2]) = 0; // Reinit counter
 
       // Test if the point is simple
-    if (_isSimple(skeleton,p.pos[0],p.pos[1],p.pos[2])) {
+    if (_isSimple(skeleton,p.pos[0],p.pos[1],p.pos[2]))	{
       if ((! _isEndPoint(skeleton,label,curve,p.pos[0],p.pos[1],p.pos[2])) || p.flux>thres) {
         skeleton(p.pos[0],p.pos[1],p.pos[2]) = 0; // Remove the point
 
