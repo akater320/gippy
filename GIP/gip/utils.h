@@ -61,9 +61,19 @@ namespace gip {
     }
 
     inline std::string random_filename() {
+#ifdef _WIN32
+		char cFilename[L_tmpnam_s];
+		errno_t err{ tmpnam_s(cFilename, L_tmpnam_s) };
+		if (err)
+			return std::move(std::string{});
+		std::string filename(cFilename);
+		std::replace(filename.begin(), filename.end(), '.', '_');
+		return filename;
+#else
         std::string filename = std::tmpnam(nullptr);    
         std::replace( filename.begin(), filename.end(), '.', '_');
         return filename;
+#endif
     }
 
     //! Splits the string s on the given delimiter(s) and returns a list of tokens without the delimiter(s)
