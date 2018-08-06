@@ -482,9 +482,7 @@ namespace gip {
         std::set< string > used_colors;
         std::set< string >::const_iterator isstr;
         std::vector< string >::const_iterator iprod, ivstr;
-        //for (iprod=products.begin(); iprod!=products.end(); iprod++) {
 		for (const auto& iprod : productsLower) {
-            //for (ivstr=colors[*iprod].begin();ivstr!=colors[*iprod].end();ivstr++) {
 			for (const auto& ivstr : colors[iprod]) {
                 used_colors.insert(ivstr);
             }
@@ -513,10 +511,7 @@ namespace gip {
                 else if (*isstr == "swir2") swir2 = image["swir2"].read<float>(*iCh);
             }
 
-            //for (iprod=products.begin(); iprod!=products.end(); iprod++) {
 			for (const std::string& prodname : productsLower) {
-                //prodname = *iprod; //string copy!
-                //prodname = to_lower(prodname); //string copy!
                 if (prodname == "ndvi") {
                     cimgout = (nir-red).div(nir+red);
                 } else if (prodname == "evi") {
