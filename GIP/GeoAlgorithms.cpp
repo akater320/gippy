@@ -444,7 +444,7 @@ namespace gip {
         return imgout;
     }
 
-    GeoImage indices(const GeoImage& image, vector<string> products, string filename) {
+    GeoImage indices(const GeoImage& image, const vector<string>& products, string filename) {
         if (Options::verbose() > 1) std::cout << "GIPPY: Indices" << std::endl;
 
         float nodataout = -32768;
