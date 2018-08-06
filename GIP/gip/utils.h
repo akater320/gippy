@@ -67,7 +67,6 @@ namespace gip {
 		if (err)
 			return std::move(std::string{});
 		std::string filename(cFilename);
-		std::replace(filename.begin(), filename.end(), '.', '_');
 		return filename;
 #else
         std::string filename = std::tmpnam(nullptr);    
