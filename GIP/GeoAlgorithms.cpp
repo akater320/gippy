@@ -449,8 +449,14 @@ namespace gip {
 
         float nodataout = -32768;
 
-        GeoImage imgout = GeoImage::create_from(image, filename, products.size(), "int16");
-        imgout.set_bandnames(products);
+		vector<string> productsLower;
+		productsLower.reserve(products.size());
+		for (std::string str : products) {
+			productsLower.push_back(to_lower(str));
+		}
+
+        GeoImage imgout = GeoImage::create_from(image, filename, productsLower.size(), "int16");
+        imgout.set_bandnames(productsLower);
         imgout.set_nodata(nodataout);
         imgout.set_gain(0.0001);
 
@@ -476,9 +482,11 @@ namespace gip {
         std::set< string > used_colors;
         std::set< string >::const_iterator isstr;
         std::vector< string >::const_iterator iprod, ivstr;
-        for (iprod=products.begin(); iprod!=products.end(); iprod++) {
-            for (ivstr=colors[*iprod].begin();ivstr!=colors[*iprod].end();ivstr++) {
-                used_colors.insert(*ivstr);
+        //for (iprod=products.begin(); iprod!=products.end(); iprod++) {
+		for (const auto& iprod : productsLower) {
+            //for (ivstr=colors[*iprod].begin();ivstr!=colors[*iprod].end();ivstr++) {
+			for (const auto& ivstr : colors[iprod]) {
+                used_colors.insert(ivstr);
             }
         }
         if (Options::verbose() > 2) {
@@ -505,9 +513,10 @@ namespace gip {
                 else if (*isstr == "swir2") swir2 = image["swir2"].read<float>(*iCh);
             }
 
-            for (iprod=products.begin(); iprod!=products.end(); iprod++) {
-                prodname = *iprod;
-                prodname = to_lower(prodname);
+            //for (iprod=products.begin(); iprod!=products.end(); iprod++) {
+			for (const std::string& prodname : productsLower) {
+                //prodname = *iprod; //string copy!
+                //prodname = to_lower(prodname); //string copy!
                 if (prodname == "ndvi") {
                     cimgout = (nir-red).div(nir+red);
                 } else if (prodname == "evi") {
