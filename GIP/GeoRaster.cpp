@@ -79,8 +79,13 @@ namespace gip {
     }
 
     //! Compute stats
+	// Returns a 1D CImg<float> containing [min,max,mean,stdev,skew,count]
+	//
     CImg<float> GeoRaster::stats() const {
         if (_ValidStats) return _Stats;
+
+		//nodata() uses a virtual function call and should be invariant during this function.
+		double noDataVal = nodata();
 
         CImg<double> cimg;
         double count(0), total(0), val;
@@ -91,7 +96,7 @@ namespace gip {
         for (iCh=_chunks.begin(); iCh!=_chunks.end(); iCh++) {
             cimg = read<double>(*iCh);
             cimg_for(cimg,ptr,double) {
-                if (*ptr != nodata()) {
+                if (*ptr != noDataVal) { //virtual function call! (AK)
                     total += *ptr;
                     count++;
                     if (*ptr > max) max = *ptr;
@@ -105,7 +110,7 @@ namespace gip {
         for (iCh=_chunks.begin(); iCh!=_chunks.end(); iCh++) {
             cimg = read<double>(*iCh);
             cimg_for(cimg,ptr,double) {
-                if (*ptr != nodata()) {
+                if (*ptr != noDataVal) {
                     val = *ptr-mean;
                     total += (val*val);
                     total3 += (val*val*val);
