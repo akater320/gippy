@@ -458,7 +458,7 @@ namespace gip {
             chunk = chunk.pad().intersect(Chunk(0,0,xsize(),ysize()));
 
         // This doesn't check for in bounds, should it?
-        int w(chunk.width()), h(chunk.height());
+        auto w(chunk.width()), h(chunk.height());
 
         CImg<T> img(w, h);
         DataType dt(typeid(T));
@@ -488,7 +488,7 @@ namespace gip {
     template<class T> CImg<T> GeoRaster::read(Chunk chunk, bool nogainoff) const {
         auto start = std::chrono::system_clock::now();
 
-        CImg<T> img(read_raw<T>(chunk));
+        CImg<T> img(read_raw<T>(chunk)); //probably move-constructed. (AK)
         CImg<T> imgorig(img);
 
         bool updatenodata = false;
