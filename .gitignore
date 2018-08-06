@@ -14,6 +14,10 @@ gippy/gippy_wrap.cpp
 gippy/algorithms.py
 gippy/algorithms_wrap.cpp
 /.vs
+*.vsp
+*.psess
+*.vspx
 /x64/Debug
 /Gippy.vcxproj.user
 /Gippy.vcxproj.filters
+/x64

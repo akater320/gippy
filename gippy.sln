@@ -5,10 +5,25 @@ VisualStudioVersion = 15.0.27703.2042
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Gippy", "Gippy.vcxproj", "{620DA609-8DC3-4DDA-81B2-E45243704361}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestHarness", "..\TestHarness\TestHarness.vcxproj", "{6010BA6C-F96F-488D-90DE-F26653C47680}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{3EAB7152-1EF1-4538-9829-554B7B95412C}"
+	ProjectSection(SolutionItems) = preProject
+		Performance1.psess = Performance1.psess
+		Performance2.psess = Performance2.psess
+		Performance3.psess = Performance3.psess
+		Performance4.psess = Performance4.psess
+	EndProjectSection
+EndProject
 Global
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
+		Profile|x64 = Profile|x64
+		Profile|x86 = Profile|x86
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
 	EndGlobalSection
@@ -17,15 +32,40 @@ Global
 		{620DA609-8DC3-4DDA-81B2-E45243704361}.Debug|x64.Build.0 = Debug|x64
 		{620DA609-8DC3-4DDA-81B2-E45243704361}.Debug|x86.ActiveCfg = Debug|Win32
 		{620DA609-8DC3-4DDA-81B2-E45243704361}.Debug|x86.Build.0 = Debug|Win32
+		{620DA609-8DC3-4DDA-81B2-E45243704361}.Profile|x64.ActiveCfg = ReleaseWithDebug|x64
+		{620DA609-8DC3-4DDA-81B2-E45243704361}.Profile|x64.Build.0 = ReleaseWithDebug|x64
+		{620DA609-8DC3-4DDA-81B2-E45243704361}.Profile|x86.ActiveCfg = ReleaseWithDebug|Win32
+		{620DA609-8DC3-4DDA-81B2-E45243704361}.Profile|x86.Build.0 = ReleaseWithDebug|Win32
 		{620DA609-8DC3-4DDA-81B2-E45243704361}.Release|x64.ActiveCfg = Release|x64
 		{620DA609-8DC3-4DDA-81B2-E45243704361}.Release|x64.Build.0 = Release|x64
 		{620DA609-8DC3-4DDA-81B2-E45243704361}.Release|x86.ActiveCfg = Release|Win32
 		{620DA609-8DC3-4DDA-81B2-E45243704361}.Release|x86.Build.0 = Release|Win32
+		{6010BA6C-F96F-488D-90DE-F26653C47680}.Debug|x64.ActiveCfg = Debug|x64
+		{6010BA6C-F96F-488D-90DE-F26653C47680}.Debug|x64.Build.0 = Debug|x64
+		{6010BA6C-F96F-488D-90DE-F26653C47680}.Debug|x86.ActiveCfg = Debug|Win32
+		{6010BA6C-F96F-488D-90DE-F26653C47680}.Debug|x86.Build.0 = Debug|Win32
+		{6010BA6C-F96F-488D-90DE-F26653C47680}.Profile|x64.ActiveCfg = ReleaseWithDebug|x64
+		{6010BA6C-F96F-488D-90DE-F26653C47680}.Profile|x64.Build.0 = ReleaseWithDebug|x64
+		{6010BA6C-F96F-488D-90DE-F26653C47680}.Profile|x86.ActiveCfg = ReleaseWithDebug|Win32
+		{6010BA6C-F96F-488D-90DE-F26653C47680}.Profile|x86.Build.0 = ReleaseWithDebug|Win32
+		{6010BA6C-F96F-488D-90DE-F26653C47680}.Release|x64.ActiveCfg = Release|x64
+		{6010BA6C-F96F-488D-90DE-F26653C47680}.Release|x64.Build.0 = Release|x64
+		{6010BA6C-F96F-488D-90DE-F26653C47680}.Release|x86.ActiveCfg = Release|Win32
+		{6010BA6C-F96F-488D-90DE-F26653C47680}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {5BCFC5BD-C977-4BCF-AA3F-391ECC967150}
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
+	EndGlobalSection
+	GlobalSection(Performance) = preSolution
+		HasPerformanceSessions = true
 	EndGlobalSection
 EndGlobal
