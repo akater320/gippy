@@ -87,16 +87,33 @@ namespace gip {
 		//nodata() uses a virtual function call and should be invariant during this function.
 		double noDataVal = nodata();
 
-        CImg<double> cimg;
+        //CImg<double> cimg;
         double count(0), total(0), val;
         double min(type().maxval()), max(type().minval());
         vector<Chunk>::const_iterator iCh;
         vector<Chunk> _chunks = chunks();
 
+		//Allocate all the memory we're going to need for this.
+		//1. Determine how big the buffers will be. 
+		unsigned int maxWidth(0), maxHeight(0);
+		for (const Chunk& ch : _chunks) 
+		{
+			unsigned int paddedWidth = ch.width() + ch.padding() * 2;
+			unsigned int paddedHeight = ch.height() + ch.padding() * 2;
+			maxWidth = std::max(maxWidth, paddedWidth);
+			maxHeight = std::max(maxHeight, paddedHeight);
+		}
+
+		//2. Allocate the CImg objects.
+		CImg<double> target(maxWidth, maxHeight);
+		CImg<float> noDataMask(maxWidth, maxHeight);
+		CImg<float> maskBuffer(maxWidth, maxHeight);
+
         for (iCh=_chunks.begin(); iCh!=_chunks.end(); iCh++) {
-            cimg = read<double>(*iCh);
-            cimg_for(cimg,ptr,double) {
-                if (*ptr != noDataVal) { //virtual function call! (AK)
+            //cimg = read<double>(*iCh);
+			read(*iCh, target, noDataMask, maskBuffer);
+            cimg_for(target,ptr,double) {
+                if (*ptr != noDataVal) { 
                     total += *ptr;
                     count++;
                     if (*ptr > max) max = *ptr;
@@ -107,9 +124,11 @@ namespace gip {
         float mean = total/count;
         total = 0;
         double total3(0);
+		//TODO: Don't do the entire read again. Just do this in the loop above?
         for (iCh=_chunks.begin(); iCh!=_chunks.end(); iCh++) {
-            cimg = read<double>(*iCh);
-            cimg_for(cimg,ptr,double) {
+            //cimg = read<double>(*iCh);
+			read(*iCh, target, noDataMask, maskBuffer);
+            cimg_for(target,ptr,double) {
                 if (*ptr != noDataVal) {
                     val = *ptr-mean;
                     total += (val*val);

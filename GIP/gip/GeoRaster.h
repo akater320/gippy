@@ -364,7 +364,10 @@ namespace gip {
 
         //! \name File I/O
         template<class T> CImg<T> read_raw(Chunk chunk=Chunk()) const;
+		template<class T> void read_raw(Chunk chunk, CImg<T>& target, CImg<float>& maskBuffer1, CImg<float>& maskBuffer2) const;
         template<class T> CImg<T> read(Chunk chunk=Chunk(), bool nogainoff=false) const;
+		template<class T> void read(Chunk chunk, CImg<T>& target, CImg<float>& maskBuffer1, CImg<float>& maskBuffer2, bool nogainoff = false) const;
+		template<class T> void read_data(Chunk chunk, CImg<T>& target) const;
         template<class T> GeoRaster& write_raw(CImg<T> img, Chunk chunk=Chunk());
         template<class T> GeoRaster& write(CImg<T> img, Chunk chunk=Chunk());
         template<class T> GeoRaster& save(GeoRaster& raster) const;
@@ -484,6 +487,56 @@ namespace gip {
         return img;
     }
 
+	template<class T> void GeoRaster::read_raw(Chunk chunk, CImg<T>& target, CImg<float>& maskBuffer, CImg<float>& maskBuffer2) const 
+	{
+		auto w(chunk.width()), h(chunk.height());
+
+		//TODO: 
+		DataType dt(typeid(T));
+		CPLErr err = _GDALRasterBand->RasterIO(GF_Read, chunk.x0(), chunk.y0(), w, h,
+			target.data(), w, h, dt.gdal(), 0, 0);
+		if (err != CE_None) {
+			std::stringstream err;
+			err << "error reading " << CPLGetLastErrorMsg();
+			throw std::runtime_error(err.str());
+		}
+
+		// Apply all masks TODO - cmask need to be float ?
+		if (_Masks.size() > 0) {
+			read_data(chunk, maskBuffer);
+			for (size_t i = 1; i < _Masks.size(); i++) {
+				_Masks[i].read_data(chunk, maskBuffer2);
+				maskBuffer.mul(maskBuffer2);
+			}
+
+			//Apply and update the maskBuffer. 
+			//At the end of the function, the buffer will hold a mask indicating all nodata samples.
+			T noDataVal = nodata();
+			cimg_forXY(target, x, y) {
+				if (target(x, y) == noDataVal) {
+					maskBuffer(x, y) = 0;
+				}
+				else if (maskBuffer(x, y) != 1) {
+					target(x, y) = noDataVal;
+				}
+			}
+		}
+	}
+
+	template<class T> void GeoRaster::read_data(Chunk chunk, CImg<T>& target) const {
+		//target must at least as large as chunk in both dimensions.
+
+		auto w(chunk.width()), h(chunk.height());
+		DataType dt(typeid(T));
+		CPLErr err = _GDALRasterBand->RasterIO(GF_Read, chunk.x0(), chunk.y0(), w, h,
+			target.data(), w, h, dt.gdal(), 0, 0);
+		if (err != CE_None) {
+			std::stringstream err;
+			err << "error reading " << CPLGetLastErrorMsg();
+			throw std::runtime_error(err.str());
+		}
+	}
+
     //! Retrieve a piece of the image as a CImg
     template<class T> CImg<T> GeoRaster::read(Chunk chunk, bool nogainoff) const {
         auto start = std::chrono::system_clock::now();
@@ -527,6 +580,56 @@ namespace gip {
 
         return img;
     }
+
+	template<class T> void GeoRaster::read(Chunk chunk, CImg<T>& img, CImg<float>& noDataMask, CImg<float>& maskBuffer2, bool nogainoff) const 
+	{
+		//TODO: Update maskBuffer1 to a better name, making it explicit that it contains as useful mask.
+		auto start = std::chrono::system_clock::now();
+
+		//CImg<T> img(read_raw<T>(chunk)); //probably move-constructed. (AK)
+		read_raw(chunk, img, noDataMask, maskBuffer2);
+		//CImg<T> imgorig(img);
+
+		bool updatenodata = false;
+		// Apply gain and offset
+		if ((gain() != 1.0 || offset() != 0.0) && (!nogainoff)) {
+			img = gain() * img + offset();
+			// Update NoData now so applied functions have proper NoData value set (?)
+			updatenodata = true;
+		}
+
+		//TODO: Do this in place or add a buffer argument.
+		// Apply Processing functions
+		if (_Functions.size() > 0) {
+			CImg<double> imgd;
+			imgd.assign(img);
+			for (std::vector<func>::const_iterator iFunc = _Functions.begin(); iFunc != _Functions.end(); iFunc++) {
+				//if (Options::verbose() > 2 && (chunk.p0()==iPoint(0,0)))
+				//    std::cout << basename() << ": Applying function " << (*iFunc) << std::endl;
+				(*iFunc)(imgd);
+			}
+			updatenodata = true;
+			img.assign(imgd);
+		}
+
+		// If processing was applied update NoData values where needed
+		if (updatenodata) {
+			double sample;
+			double noDataVal = nodata();
+			cimg_forXY(img, x, y) {
+				//sampleOrig = static_cast<double>(imgorig(x, y));
+				sample = static_cast<double>(img(x, y));
+				if (noDataMask(x, y) != 1 || (std::is_floating_point<T>::value && (std::isinf(sample) || std::isnan(sample))))
+					img(x, y) = noDataVal;
+			}
+		}
+
+		auto elapsed = std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::system_clock::now() - start);
+		if (Options::verbose() > 3)
+			std::cout << basename() << ": read " << chunk << " in " << elapsed.count() << " seconds" << std::endl;
+
+		//return img;
+	}
 
     //! Write raw CImg to file
     template<class T> GeoRaster& GeoRaster::write_raw(CImg<T> img, Chunk chunk) {
