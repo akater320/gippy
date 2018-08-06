@@ -205,6 +205,7 @@ namespace gip {
         }
 
         _Chunks.clear();
+		_Chunks.reserve(numchunks);
         Chunk chunk;
         for (unsigned int i=0; i<numchunks; i++) {
             chunk = Chunk(0, rows*i, xsize(), std::min(rows*(i+1),ysize())-(rows*i) );
