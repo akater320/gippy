@@ -444,11 +444,61 @@ namespace gip {
         return imgout;
     }
 
+	//A struct that makes it easy to put CImg in a container without copies.
+	template<class Timg, class TnoData>
+	struct ColorBuffer {
+		ColorBuffer() = default;
+
+		ColorBuffer(unsigned int width, unsigned int height) :
+		main(std::make_unique<CImg<Timg>>(width, height)), noData(std::make_unique<CImg<TnoData>>(width, height))
+		{
+		}
+
+		//No copies.
+		ColorBuffer(const ColorBuffer&) = delete;
+		//Yes moves.
+		ColorBuffer(ColorBuffer&&) = default;
+
+		std::unique_ptr<CImg<Timg>> main;
+		std::unique_ptr<CImg<TnoData>> noData;
+	};
+
     GeoImage indices(const GeoImage& image, const vector<string>& products, string filename) {
+		using TImage = float;
+		using TNoData = float;
+
+		enum struct ProductType : int {
+			NDVI,
+			EVI ,
+			LSWI ,
+			NDSI ,
+			NDWI ,
+			BI,
+			SATVI ,
+			MSAVI2 ,
+			VARI ,
+			BRGT,
+			NDTI ,
+			CRC ,
+			CRCM,
+			ISTI ,
+			STI,
+		};
+		enum struct BandName : int {
+			nir,
+			red,
+			blue,
+			green,
+			swir1,
+			swir2
+		};
+
+
         if (Options::verbose() > 1) std::cout << "GIPPY: Indices" << std::endl;
 
-        float nodataout = -32768;
+        TImage nodataout = -32768;
 
+		//Make a copy of the product names in canonical (lowercase) form.
 		vector<string> productsLower;
 		productsLower.reserve(products.size());
 		for (std::string str : products) {
@@ -460,96 +510,191 @@ namespace gip {
         imgout.set_nodata(nodataout);
         imgout.set_gain(0.0001);
 
-        std::map< string, std::vector<string> > colors;
-        colors["ndvi"] = {"nir","red"};
-        colors["evi"] = {"nir","red","blue"};
-        colors["lswi"] = {"nir","swir1"};
-        colors["ndsi"] = {"swir1","green"};
-        colors["ndwi"] = {"green","nir"};
-        colors["bi"] = {"blue","nir"};
-        colors["satvi"] = {"swir1","red", "swir2"};
-        colors["msavi2"] = {"nir","red"};
-        colors["vari"] = {"red","green","blue"};
-        colors["brgt"] = {"red","green","blue","nir"};
+		//A class would defintiely be better, but, quick and dirty for now.
+
+		static std::map<std::string, ProductType> productNameMap;
+		productNameMap["ndvi"] = ProductType::NDVI;
+		productNameMap["evi"] = ProductType::EVI;
+		productNameMap["lswi"] = ProductType::LSWI;
+		productNameMap["ndsi"] = ProductType::NDSI;
+		productNameMap["ndwi"] = ProductType::NDWI;
+		productNameMap["bi"] = ProductType::BI;
+		productNameMap["satvi"] = ProductType::SATVI;
+		productNameMap["msaviw"] = ProductType::MSAVI2;
+		productNameMap["vari"] = ProductType::VARI;
+		productNameMap["brgt"] = ProductType::BRGT;
+		productNameMap["ndti"] = ProductType::NDTI;
+		productNameMap["crc"] = ProductType::CRC;
+		productNameMap["crcm"] = ProductType::CRCM;
+		productNameMap["isti"] = ProductType::ISTI;
+		productNameMap["sti"] = ProductType::STI;
+
+        static std::map< ProductType, std::vector<BandName> > colorDependencies;
+		colorDependencies[ProductType::NDVI] = {BandName::nir,BandName::red};
+		colorDependencies[ProductType::EVI] = {BandName::nir,BandName::red,BandName::blue};
+		colorDependencies[ProductType::LSWI] = { BandName::nir,BandName::swir1};
+		colorDependencies[ProductType::NDSI] = { BandName::swir1,BandName::green};
+		colorDependencies[ProductType::NDWI] = { BandName::green,BandName::nir};
+		colorDependencies[ProductType::BI] = { BandName::blue,BandName::nir};
+		colorDependencies[ProductType::SATVI] = { BandName::swir1,BandName::red, BandName::swir2};
+		colorDependencies[ProductType::MSAVI2] = { BandName::nir,BandName::red};
+		colorDependencies[ProductType::VARI] = { BandName::red,BandName::green,BandName::blue};
+		colorDependencies[ProductType::BRGT] = { BandName::red,BandName::green,BandName::blue,BandName::nir};
         // Tillage indices
-        colors["ndti"] = {"swir2","swir1"};
-        colors["crc"] = {"swir1","swir2","blue"};
-        colors["crcm"] = {"swir1","swir2","green"};
-        colors["isti"] = {"swir1","swir2"};
-        colors["sti"] = {"swir1","swir2"};
+		colorDependencies[ProductType::NDTI] = { BandName::swir2,BandName::swir1};
+		colorDependencies[ProductType::CRC] = { BandName::swir1,BandName::swir2,BandName::blue};
+		colorDependencies[ProductType::CRCM] = { BandName::swir1,BandName::swir2,BandName::green};
+		colorDependencies[ProductType::ISTI] = { BandName::swir1,BandName::swir2};
+		colorDependencies[ProductType::STI] = { BandName::swir1,BandName::swir2};
+
+		std::vector<std::tuple<ProductType, std::string>> productsList;
+		productsList.reserve(productsLower.size());
+		for (const auto& prodName : productsLower) {
+			productsList.push_back(std::make_tuple(productNameMap[prodName], prodName));
+		}
+
+		//vector<Chunk>::const_iterator iCh;
+		vector<Chunk> chunks = image.chunks();
+		//std::string prodname;
+
+		//Find the largest chunk.
+		unsigned int maxWidth{ 0 }, maxHeight{ 0 };
+		for (const Chunk& ch : chunks) {
+			maxWidth = std::max(maxWidth, static_cast<unsigned int>(ch.width() + ch.padding() * 2));
+			maxHeight = std::max(maxHeight, static_cast<unsigned int>(ch.height() + ch.padding() * 2));
+		}
 
         // Figure out what colors are needed
-        std::set< string > used_colors;
-        std::set< string >::const_iterator isstr;
-        std::vector< string >::const_iterator iprod, ivstr;
+		std::map < BandName, ColorBuffer<TImage, TNoData> > used_colors;
+        //std::set< string >::const_iterator isstr;
+        //std::vector< string >::const_iterator iprod, ivstr;
 		for (const auto& iprod : productsLower) {
-			for (const auto& ivstr : colors[iprod]) {
-                used_colors.insert(ivstr);
+			for (const auto& ivstr : colorDependencies[productNameMap[iprod]]) {
+				if (used_colors.find(ivstr) == used_colors.end()) {
+					std::cout << "Inserting buffers for " << typeid(ivstr).name() << std::endl;
+					used_colors.emplace(
+						ivstr, ColorBuffer<TImage, TNoData>(maxWidth, maxHeight));
+					std::cout << "insert done." << std::endl;
+				}
             }
         }
-        if (Options::verbose() > 2) {
-            cout << "Colors used: ";
-            for (isstr=used_colors.begin();isstr!=used_colors.end();isstr++) cout << " " << *isstr;
-            cout << endl;
-        }
 
-        CImg<float> red, green, blue, nir, swir1, swir2, cimgout, cimgmask, tmpimg;
-
-        vector<Chunk>::const_iterator iCh;
-        vector<Chunk> chunks = image.chunks();
-        std::string prodname;
+		//A scratch buffer that "read" needs. We'll also use it coalesce the nodata maskes for the bands.
+		CImg<TNoData> ndScratch(maxWidth, maxHeight);
+		CImg<TImage> cimgout(maxWidth, maxHeight), cimgout2(maxWidth, maxHeight);
 
         // need to add overlap
-        for (iCh=chunks.begin(); iCh!=chunks.end(); iCh++) {
-            if (Options::verbose() > 3) cout << "Chunk " << *iCh << " of " << image[0].size() << endl;
-            for (isstr=used_colors.begin();isstr!=used_colors.end();isstr++) {
-                if (*isstr == "red") red = image["red"].read<float>(*iCh);
-                else if (*isstr == "green") green = image["green"].read<float>(*iCh);
-                else if (*isstr == "blue") blue = image["blue"].read<float>(*iCh);
-                else if (*isstr == "nir") nir = image["nir"].read<float>(*iCh);
-                else if (*isstr == "swir1") swir1 = image["swir1"].read<float>(*iCh);
-                else if (*isstr == "swir2") swir2 = image["swir2"].read<float>(*iCh);
+        //for (iCh=chunks.begin(); iCh!=chunks.end(); iCh++) {
+		for (const auto& iCh : chunks) {
+            if (Options::verbose() > 3) cout << "Chunk " << iCh << " of " << image[0].size() << endl;
+            //for (isstr=used_colors.begin();isstr!=used_colors.end();isstr++) 
+			for (auto& color_kv : used_colors)
+			{
+				//TODO: Move this behavior closer to the data.
+				auto& imageBuffer = *color_kv.second.main;
+				auto& noDataBuffer = *color_kv.second.noData;
+				switch (color_kv.first)
+				{			
+				case BandName::blue:
+					image["blue"].read(iCh, imageBuffer, noDataBuffer);
+					break;
+				case BandName::green:
+					image["green"].read(iCh, imageBuffer, noDataBuffer);
+					break;
+				case BandName::nir:
+					image["nir"].read(iCh, imageBuffer, noDataBuffer);
+					break;
+				case BandName::red:
+					image["red"].read(iCh, imageBuffer, noDataBuffer);
+					break;
+				case BandName::swir1:
+					image["swir1"].read(iCh, imageBuffer, noDataBuffer);
+					break;
+				case BandName::swir2:
+					image["swir2"].read(iCh, imageBuffer, noDataBuffer);
+					break;
+				default:
+					throw new std::runtime_error("Unexpected band.");
+					break;
+				}
+
+    //            if (*isstr == "red") red = image["red"].read<float>(*iCh);
+				//else if (*isstr == "green") image["green"].read(*iCh, green, ndMask, ndScratch); //green = image["green"].read<float>(*iCh);
+    //            else if (*isstr == "blue") blue = image["blue"].read<float>(*iCh);
+				//else if (*isstr == "nir") image["nir"].read(*iCh, nir, ndMask, ndScratch); //nir = image["nir"].read<float>(*iCh);
+    //            else if (*isstr == "swir1") swir1 = image["swir1"].read<float>(*iCh);
+    //            else if (*isstr == "swir2") swir2 = image["swir2"].read<float>(*iCh);
             }
 
-			for (const std::string& prodname : productsLower) {
-                if (prodname == "ndvi") {
-                    cimgout = (nir-red).div(nir+red);
-                } else if (prodname == "evi") {
-                    cimgout = 2.5*(nir-red).div(nir + 6*red - 7.5*blue + 1);
-                } else if (prodname == "lswi") {
-                    cimgout = (nir-swir1).div(nir+swir1);
-                } else if (prodname == "ndsi") {
-                    cimgout = (green-swir1).div(green+swir1);
-                } else if (prodname == "ndwi") {
-                    cimgout = (green-nir).div(green+nir);
-                } else if (prodname == "bi") {
-                    cimgout = 0.5*(blue+nir);
-                } else if (prodname == "satvi") {
-                    float L(0.5);
-                    cimgout = (((1.0+L)*(swir1 - red)).div(swir1+red+L)) - (0.5*swir2);
-                } else if (prodname == "msavi2") {
-                    tmpimg = (nir*2)+1;
-                    cimgout = (tmpimg - (tmpimg.pow(2) - ((nir-red)*8).sqrt())) * 0.5;
-                } else if (prodname == "vari") {
-                    cimgout = (green-red).div(green+red-blue);
-                } else if (prodname == "brgt") {
-                    cimgout = (0.3*blue + 0.3*red + 0.1*nir + 0.3*green);
-                // Tillage indices
-                } else if (prodname == "ndti") {
-                    cimgout = (swir1-swir2).div(swir1+swir2);
-                } else if (prodname == "crc") {
-                    cimgout = (swir1-blue).div(swir2+blue);
-                } else if (prodname == "crcm") {
-                    cimgout = (swir1-green).div(swir2+green);
-                } else if (prodname == "isti") {
-                    cimgout = swir2.div(swir1);
-                } else if (prodname == "sti") {
-                    cimgout = swir1.div(swir2);
-                }
-                // TODO don't read mask again...create here
-                cimgmask = image.nodata_mask(colors[prodname], *iCh);
-                cimg_forXY(cimgout,x,y) if (cimgmask(x,y)) cimgout(x,y) = nodataout;
-                imgout[prodname].write(cimgout, *iCh);
+			//for (const std::string& prodname : productsLower) {
+			for (const auto& prodTuple : productsList) {
+				//TODO: Profile the branch misses.
+				switch (std::get<0>(prodTuple)) {
+				case ProductType::NDVI:
+					//cimgout = (used_colors[BandName::nir].main - used_colors[BandName::red].main).div(used_colors[BandName::nir].main + used_colors[BandName::red].main);
+					cimgout = *used_colors[BandName::nir].main;
+					cimgout -= *used_colors[BandName::red].main;
+					cimgout2 = *used_colors[BandName::nir].main;
+					cimgout2 += *used_colors[BandName::red].main;
+					cimgout.div(cimgout2);
+					break;
+				case ProductType::NDWI:
+					//cimgout = (used_colors[BandName::green].main - used_colors[BandName::nir].main).div(used_colors[BandName::green].main + used_colors[BandName::nir].main);
+					cimgout = *used_colors[BandName::green].main;
+					cimgout -= *used_colors[BandName::nir].main;
+					cimgout2 = *used_colors[BandName::green].main;
+					cimgout2 += *used_colors[BandName::nir].main;
+					cimgout.div(cimgout2);
+
+					//Coalesce the no_data mask.
+					ndScratch = *used_colors[BandName::green].noData;
+					ndScratch |= *used_colors[BandName::nir].noData;
+					break;
+				default:
+					throw new std::runtime_error("Unexpected product type.");
+					break;
+				}
+                //if (prodname == "ndvi") {
+                //    
+                //} else if (prodname == "evi") {
+                //    cimgout = 2.5*(nir-red).div(nir + 6*red - 7.5*blue + 1);
+                //} else if (prodname == "lswi") {
+                //    cimgout = (nir-swir1).div(nir+swir1);
+                //} else if (prodname == "ndsi") {
+                //    cimgout = (green-swir1).div(green+swir1);
+                //} else if (prodname == "ndwi") {
+                //    cimgout = (green-nir).div(green+nir);
+                //} else if (prodname == "bi") {
+                //    cimgout = 0.5*(blue+nir);
+                //} else if (prodname == "satvi") {
+                //    float L(0.5);
+                //    cimgout = (((1.0+L)*(swir1 - red)).div(swir1+red+L)) - (0.5*swir2);
+                //} else if (prodname == "msavi2") {
+                //    tmpimg = (nir*2)+1;
+                //    cimgout = (tmpimg - (tmpimg.pow(2) - ((nir-red)*8).sqrt())) * 0.5;
+                //} else if (prodname == "vari") {
+                //    cimgout = (green-red).div(green+red-blue);
+                //} else if (prodname == "brgt") {
+                //    cimgout = (0.3*blue + 0.3*red + 0.1*nir + 0.3*green);
+                //// Tillage indices
+                //} else if (prodname == "ndti") {
+                //    cimgout = (swir1-swir2).div(swir1+swir2);
+                //} else if (prodname == "crc") {
+                //    cimgout = (swir1-blue).div(swir2+blue);
+                //} else if (prodname == "crcm") {
+                //    cimgout = (swir1-green).div(swir2+green);
+                //} else if (prodname == "isti") {
+                //    cimgout = swir2.div(swir1);
+                //} else if (prodname == "sti") {
+                //    cimgout = swir1.div(swir2);
+                //}
+     //           // TODO don't read mask again...create here
+     //           cimgmask = image.nodata_mask(colors[prodname], *iCh);
+     //           cimg_forXY(cimgmask,x,y) 
+					//if (cimgmask(x, y))  cimgout(x, y) = nodataout; 
+				cimg_forXY(ndScratch,x,y) 
+					if (ndScratch(x, y))  cimgout(x, y) = nodataout; 
+                imgout[std::get<1>(prodTuple)].write(cimgout, iCh); 
             }
         }
         return imgout;

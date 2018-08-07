@@ -364,12 +364,12 @@ namespace gip {
 
         //! \name File I/O
         template<class T> CImg<T> read_raw(Chunk chunk=Chunk()) const;
-		template<class T> void read_raw(Chunk chunk, CImg<T>& target, CImg<float>& maskBuffer1, CImg<float>& maskBuffer2) const;
+		template<class T> void read_raw(Chunk chunk, CImg<T>& target, CImg<float>& noDataBuffer) const;
         template<class T> CImg<T> read(Chunk chunk=Chunk(), bool nogainoff=false) const;
-		template<class T> void read(Chunk chunk, CImg<T>& target, CImg<float>& maskBuffer1, CImg<float>& maskBuffer2, bool nogainoff = false) const;
+		template<class T> void read(Chunk chunk, CImg<T>& target, CImg<float>& noDataBuffer, bool nogainoff = false) const;
 		template<class T> void read_data(Chunk chunk, CImg<T>& target) const;
-        template<class T> GeoRaster& write_raw(CImg<T> img, Chunk chunk=Chunk());
-        template<class T> GeoRaster& write(CImg<T> img, Chunk chunk=Chunk());
+        template<class T> GeoRaster& write_raw(const CImg<T>& img, Chunk chunk=Chunk());
+        template<class T> GeoRaster& write(const CImg<T>& img, Chunk chunk=Chunk());
         template<class T> GeoRaster& save(GeoRaster& raster) const;
 
         GeoRaster& warp_into(GeoRaster&, GeoFeature=GeoFeature(), int=0, bool=false) const;
@@ -487,7 +487,7 @@ namespace gip {
         return img;
     }
 
-	template<class T> void GeoRaster::read_raw(Chunk chunk, CImg<T>& target, CImg<float>& maskBuffer, CImg<float>& maskBuffer2) const 
+	template<class T> void GeoRaster::read_raw(Chunk chunk, CImg<T>& target, CImg<float>& maskBuffer) const 
 	{
 		auto w(chunk.width()), h(chunk.height());
 
@@ -502,24 +502,42 @@ namespace gip {
 		}
 
 		// Apply all masks TODO - cmask need to be float ?
-		if (_Masks.size() > 0) {
-			read_data(chunk, maskBuffer);
-			for (size_t i = 1; i < _Masks.size(); i++) {
-				_Masks[i].read_data(chunk, maskBuffer2);
-				maskBuffer.mul(maskBuffer2);
-			}
+		//if (_Masks.size() > 0) {
+		//	read_data(chunk, maskBuffer);
+		//	for (size_t i = 1; i < _Masks.size(); i++) {
+		//		_Masks[i].read_data(chunk, maskBuffer2);
+		//		maskBuffer.mul(maskBuffer2);
+		//	}
 
-			//Apply and update the maskBuffer. 
-			//At the end of the function, the buffer will hold a mask indicating all nodata samples.
-			T noDataVal = nodata();
-			cimg_forXY(target, x, y) {
-				if (target(x, y) == noDataVal) {
-					maskBuffer(x, y) = 0;
-				}
-				else if (maskBuffer(x, y) != 1) {
+		//	//Apply and update the maskBuffer. 
+		//	//At the end of the function, the buffer will hold a mask indicating all nodata samples.
+		//	T noDataVal = nodata();
+		//	cimg_forXY(target, x, y) {
+		//		if (target(x, y) == noDataVal) {
+		//			maskBuffer(x, y) = 0;
+		//		}
+		//		else if (maskBuffer(x, y) != 1) {
+		//			target(x, y) = noDataVal;
+		//		}
+		//	}
+		//}
+
+		T noDataVal = nodata();
+		for (const auto& mask : _Masks) {
+			read_data(chunk, maskBuffer);
+			cimg_forXY(maskBuffer, x, y) {
+				//For a mask, 1 means "visible".
+				if (maskBuffer(x, y) != 1) {
 					target(x, y) = noDataVal;
 				}
 			}
+		}
+
+		//1.0 indicates "no data", by the gippy convention.
+		maskBuffer.assign(0.0);
+		cimg_forXY(target, x, y) {
+			if (target(x, y) == noDataVal)
+				maskBuffer = 1.0f;
 		}
 	}
 
@@ -581,19 +599,21 @@ namespace gip {
         return img;
     }
 
-	template<class T> void GeoRaster::read(Chunk chunk, CImg<T>& img, CImg<float>& noDataMask, CImg<float>& maskBuffer2, bool nogainoff) const 
+	template<class T> void GeoRaster::read(Chunk chunk, CImg<T>& img, CImg<float>& noDataMask, bool nogainoff) const 
 	{
 		//TODO: Update maskBuffer1 to a better name, making it explicit that it contains as useful mask.
 		auto start = std::chrono::system_clock::now();
 
 		//CImg<T> img(read_raw<T>(chunk)); //probably move-constructed. (AK)
-		read_raw(chunk, img, noDataMask, maskBuffer2);
+		read_raw(chunk, img, noDataMask);
 		//CImg<T> imgorig(img);
 
 		bool updatenodata = false;
 		// Apply gain and offset
 		if ((gain() != 1.0 || offset() != 0.0) && (!nogainoff)) {
-			img = gain() * img + offset();
+			//img = gain() * img + offset();
+			img *= gain();
+			img += offset();
 			// Update NoData now so applied functions have proper NoData value set (?)
 			updatenodata = true;
 		}
@@ -632,16 +652,17 @@ namespace gip {
 	}
 
     //! Write raw CImg to file
-    template<class T> GeoRaster& GeoRaster::write_raw(CImg<T> img, Chunk chunk) {
+    template<class T> GeoRaster& GeoRaster::write_raw(const CImg<T>& img, Chunk chunk) {
         if (!chunk.valid())
             // default to entire image
             chunk = Chunk(0,0,xsize(),ysize());
         // Depad this if needed
         else if (chunk.padding() > 0) {
-            Chunk pchunk = chunk.pad().intersect(Chunk(0,0,xsize(),ysize()));
+			throw new std::runtime_error("Not implemented.");
+           /* Chunk pchunk = chunk.pad().intersect(Chunk(0,0,xsize(),ysize()));
             Point<int> p0(chunk.p0()-pchunk.p0());
             Point<int> p1 = p0 + Point<int>(chunk.width(),chunk.height());
-            img.crop(p0.x(),p0.y(),p1.x(),p1.y());
+            img.crop(p0.x(),p0.y(),p1.x(),p1.y());*/
         }
 
         if (Options::verbose() > 4) {
@@ -649,7 +670,7 @@ namespace gip {
                 << img.height() << " image to rect " << chunk << std::endl;
         }
         CPLErr err = _GDALRasterBand->RasterIO(GF_Write, chunk.x0(), chunk.y0(),
-            chunk.width(), chunk.height(), img.data(), img.width(), img.height(),
+            chunk.width(), chunk.height(), const_cast<T*>(img.data()), chunk.width(), chunk.height(),
             DataType(typeid(T)).gdal(), 0, 0);
         if (err != CE_None) {
             std::stringstream err;
@@ -661,13 +682,16 @@ namespace gip {
     }
 
     //! Write a Cimg to the file
-    template<class T> GeoRaster& GeoRaster::write(CImg<T> img, Chunk chunk) {
+    template<class T> GeoRaster& GeoRaster::write(const CImg<T>& img, Chunk chunk) {
         if (gain() != 1.0 || offset() != 0.0) {
-            cimg_for(img,ptr,T) if (*ptr != nodata()) *ptr = (*ptr-offset())/gain();
+			double noDataVal = nodata();
+			double offsetVal = offset();
+			double gainVal = gain(); //TODO: Precalculate 1.0/gainVal?
+            cimg_for(img,ptr,T) if (*ptr != noDataVal) *ptr = (*ptr-offsetVal)/gainVal;
         }
         if (Options::verbose() > 3 && (chunk.p0()==iPoint(0,0)))
             std::cout << basename() << ": Writing (" << gain() << "x + " << offset() << ")" << std::endl;
-        return write_raw(img,chunk);
+        return write_raw(img,chunk); 
     }
 
     //! Process into input band "raster"
@@ -679,16 +703,32 @@ namespace gip {
         raster.set_affine(this->affine());
         std::vector<Chunk>::const_iterator iCh;
         std::vector<Chunk> _chunks = chunks();
+
+		//Find the largest chunk.
+		unsigned int maxWidth{ 0 }, maxHeight{ 0 };
+		for (const Chunk& ch : _chunks) {
+			maxWidth = std::max(maxWidth, static_cast<unsigned int>(ch.width() + ch.padding() * 2));
+			maxHeight = std::max(maxHeight, static_cast<unsigned int>(ch.height() + ch.padding() * 2));
+		}
+
         if (Options::verbose() > 3)
             std::cout << basename() << ": Processing in " << _chunks.size() << " chunks" << std::endl;
         bool nogainoff = false;
         if (this->type().string() == raster.type().string()) nogainoff = true;
-        for (iCh=_chunks.begin(); iCh!=_chunks.end(); iCh++) {
-                CImg<T> cimg = read<T>(*iCh, nogainoff);
-                if (nodata() != raster.nodata()) {
-                    cimg_for(cimg,ptr,T) { if (*ptr == nodata()) *ptr = raster.nodata(); }
+        //for (iCh=_chunks.begin(); iCh!=_chunks.end(); iCh++) {
+
+		CImg<T> imgBuffer(maxWidth, maxHeight);
+		CImg<float> noDataBuffer(maxWidth, maxHeight);
+
+		double myNoDataVal = nodata();
+		double otherNoDataVal = raster.nodata();
+		for(const auto& iCh : _chunks) {
+                //CImg<T> cimg = read<T>(*iCh, nogainoff);
+			read(iCh, imgBuffer, noDataBuffer, nogainoff);
+                if (myNoDataVal != otherNoDataVal) {
+                    cimg_for(imgBuffer,ptr,T) { if (*ptr == myNoDataVal) *ptr = otherNoDataVal; }
                 }
-                raster.write(cimg,*iCh);
+                raster.write(imgBuffer, iCh);
         }
         if (nogainoff) {
             raster.set_gain(this->gain());

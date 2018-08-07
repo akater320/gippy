@@ -107,11 +107,10 @@ namespace gip {
 		//2. Allocate the CImg objects.
 		CImg<double> target(maxWidth, maxHeight);
 		CImg<float> noDataMask(maxWidth, maxHeight);
-		CImg<float> maskBuffer(maxWidth, maxHeight);
 
         for (iCh=_chunks.begin(); iCh!=_chunks.end(); iCh++) {
             //cimg = read<double>(*iCh);
-			read(*iCh, target, noDataMask, maskBuffer);
+			read(*iCh, target, noDataMask);
             cimg_for(target,ptr,double) {
                 if (*ptr != noDataVal) { 
                     total += *ptr;
@@ -127,7 +126,7 @@ namespace gip {
 		//TODO: Don't do the entire read again. Just do this in the loop above?
         for (iCh=_chunks.begin(); iCh!=_chunks.end(); iCh++) {
             //cimg = read<double>(*iCh);
-			read(*iCh, target, noDataMask, maskBuffer);
+			read(*iCh, target, noDataMask);
             cimg_for(target,ptr,double) {
                 if (*ptr != noDataVal) {
                     val = *ptr-mean;
