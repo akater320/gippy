@@ -10716,7 +10716,7 @@ namespace cimg_library_suffixed {
     ~CImg() {
 		if (!_is_shared) {
 #ifdef CIMG_MEM_DIAG
-			std::cout << "~CImg() " << (_width * _height * _depth) << std::endl;
+			std::cout << "~CImg() " << (_width * _height * _depth * sizeof(T)) << std::endl;
 #endif
 			delete[] _data;
 		}
@@ -10772,7 +10772,7 @@ namespace cimg_library_suffixed {
         _width = size_x; _height = size_y; _depth = size_z; _spectrum = size_c;
         try { 
 #ifdef CIMG_MEM_DIAG
-			std::cout << "CImg(?) L" << __LINE__ << " " << siz * sizeof(T) << std::endl;
+			std::cout << "CImg(x,y,z,c) L" << __LINE__ << " " << siz * sizeof(T) << std::endl;
 #endif
 			_data = new T[siz]; 
 		} catch (...) {
