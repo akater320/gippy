@@ -10714,7 +10714,12 @@ namespace cimg_library_suffixed {
          (to a deallocated buffer).
     **/
     ~CImg() {
-      if (!_is_shared) delete[] _data;
+		if (!_is_shared) {
+#ifdef CIMG_MEM_DIAG
+			std::cout << "~CImg() " << (_width * _height * _depth) << std::endl;
+#endif
+			delete[] _data;
+		}
     }
 
     //! Construct empty image.
@@ -10765,7 +10770,12 @@ namespace cimg_library_suffixed {
       size_t siz = (size_t)size_x*size_y*size_z*size_c;
       if (siz) {
         _width = size_x; _height = size_y; _depth = size_z; _spectrum = size_c;
-        try { _data = new T[siz]; } catch (...) {
+        try { 
+#ifdef CIMG_MEM_DIAG
+			std::cout << "CImg(?) L" << __LINE__ << " " << siz * sizeof(T) << std::endl;
+#endif
+			_data = new T[siz]; 
+		} catch (...) {
           _width = _height = _depth = _spectrum = 0; _data = 0;
           throw CImgInstanceException(_cimg_instance
                                       "CImg(): Failed to allocate memory (%s) for image (%u,%u,%u,%u).",
@@ -10797,7 +10807,12 @@ namespace cimg_library_suffixed {
       const size_t siz = (size_t)size_x*size_y*size_z*size_c;
       if (siz) {
         _width = size_x; _height = size_y; _depth = size_z; _spectrum = size_c;
-        try { _data = new T[siz]; } catch (...) {
+        try { 
+#ifdef CIMG_MEM_DIAG
+			std::cout << "CImg(?) L" << __LINE__ << " " << siz * sizeof(T) << std::endl;
+#endif
+			_data = new T[siz]; 
+		} catch (...) {
           _width = _height = _depth = _spectrum = 0; _data = 0;
           throw CImgInstanceException(_cimg_instance
                                       "CImg(): Failed to allocate memory (%s) for image (%u,%u,%u,%u).",
@@ -11022,7 +11037,12 @@ namespace cimg_library_suffixed {
       const size_t siz = (size_t)size_x*size_y*size_z*size_c;
       if (siz) {
         _width = size_x; _height = size_y; _depth = size_z; _spectrum = size_c;
-        try { _data = new T[siz]; } catch (...) {
+        try {
+#ifdef CIMG_MEM_DIAG
+			std::cout << "CImg(?) L" << __LINE__ << " " << siz * sizeof(T) << std::endl;
+#endif
+			_data = new T[siz]; 
+		} catch (...) {
           _width = _height = _depth = _spectrum = 0; _data = 0;
           throw CImgInstanceException(_cimg_instance
                                       "CImg(): Failed to allocate memory (%s) for image (%u,%u,%u,%u).",
@@ -11078,7 +11098,12 @@ namespace cimg_library_suffixed {
       const size_t siz = (size_t)size_x*size_y*size_z*size_c;
       if (values && siz) {
         _width = size_x; _height = size_y; _depth = size_z; _spectrum = size_c;
-        try { _data = new T[siz]; } catch (...) {
+        try { 
+#ifdef CIMG_MEM_DIAG
+			std::cout << "CImg(?) L" << __LINE__ << " " << siz * sizeof(T) << std::endl;
+#endif
+			_data = new T[siz];
+		} catch (...) {
           _width = _height = _depth = _spectrum = 0; _data = 0;
           throw CImgInstanceException(_cimg_instance
                                       "CImg(): Failed to allocate memory (%s) for image (%u,%u,%u,%u).",
@@ -11099,7 +11124,12 @@ namespace cimg_library_suffixed {
         _width = size_x; _height = size_y; _depth = size_z; _spectrum = size_c; _is_shared = is_shared;
         if (_is_shared) _data = const_cast<T*>(values);
         else {
-          try { _data = new T[siz]; } catch (...) {
+          try {
+#ifdef CIMG_MEM_DIAG
+			  std::cout << "CImg(?) L" << __LINE__ << " " << siz * sizeof(T) << std::endl;
+#endif
+			  _data = new T[siz]; 
+		  } catch (...) {
             _width = _height = _depth = _spectrum = 0; _data = 0;
             throw CImgInstanceException(_cimg_instance
                                         "CImg(): Failed to allocate memory (%s) for image (%u,%u,%u,%u).",
@@ -11161,7 +11191,12 @@ namespace cimg_library_suffixed {
       const size_t siz = (size_t)img.size();
       if (img._data && siz) {
         _width = img._width; _height = img._height; _depth = img._depth; _spectrum = img._spectrum;
-        try { _data = new T[siz]; } catch (...) {
+        try {
+#ifdef CIMG_MEM_DIAG
+			std::cout << "CImg(?) L" << __LINE__ << " " << siz * sizeof(T) << std::endl;
+#endif
+			_data = new T[siz];
+		} catch (...) {
           _width = _height = _depth = _spectrum = 0; _data = 0;
           throw CImgInstanceException(_cimg_instance
                                       "CImg(): Failed to allocate memory (%s) for image (%u,%u,%u,%u).",
@@ -11181,7 +11216,12 @@ namespace cimg_library_suffixed {
         _is_shared = img._is_shared;
         if (_is_shared) _data = const_cast<T*>(img._data);
         else {
-          try { _data = new T[siz]; } catch (...) {
+          try { 
+#ifdef CIMG_MEM_DIAG
+			  std::cout << "CImg(const CImg&) L" << __LINE__ << " " << siz * sizeof(T) << std::endl;
+#endif
+			  _data = new T[siz];
+		  } catch (...) {
             _width = _height = _depth = _spectrum = 0; _data = 0;
             throw CImgInstanceException(_cimg_instance
                                         "CImg(): Failed to allocate memory (%s) for image (%u,%u,%u,%u).",
@@ -11223,7 +11263,12 @@ namespace cimg_library_suffixed {
       const size_t siz = (size_t)img.size();
       if (img._data && siz) {
         _width = img._width; _height = img._height; _depth = img._depth; _spectrum = img._spectrum;
-        try { _data = new T[siz]; } catch (...) {
+        try {
+#ifdef CIMG_MEM_DIAG
+			std::cout << "CImg(?) L" << __LINE__ << " " << siz * sizeof(T) << std::endl;
+#endif
+			_data = new T[siz]; 
+		} catch (...) {
           _width = _height = _depth = _spectrum = 0; _data = 0;
           throw CImgInstanceException(_cimg_instance
                                       "CImg(): Failed to allocate memory (%s) for image (%u,%u,%u,%u).",
@@ -11243,7 +11288,12 @@ namespace cimg_library_suffixed {
         _is_shared = is_shared;
         if (_is_shared) _data = const_cast<T*>(img._data);
         else {
-          try { _data = new T[siz]; } catch (...) {
+          try { 
+#ifdef CIMG_MEM_DIAG
+			  std::cout << "CImg(?) L" << __LINE__ << " " << siz * sizeof(T) << std::endl;
+#endif
+			  _data = new T[siz]; 
+		  } catch (...) {
             _width = _height = _depth = _spectrum = 0; _data = 0;
             throw CImgInstanceException(_cimg_instance
                                         "CImg(): Failed to allocate memory (%s) for image (%u,%u,%u,%u).",
@@ -11352,7 +11402,12 @@ namespace cimg_library_suffixed {
                                       size_x,size_y,size_z,size_c);
 	else {
           delete[] _data;
-          try { _data = new T[siz]; } catch (...) {
+          try { 
+#ifdef CIMG_MEM_DIAG
+			  std::cout << "CImg(?) L" << __LINE__ << " " << siz * sizeof(T) << std::endl;
+#endif
+			  _data = new T[siz]; 
+		  } catch (...) {
             _width = _height = _depth = _spectrum = 0; _data = 0;
             throw CImgInstanceException(_cimg_instance
                                         "assign(): Failed to allocate memory (%s) for image (%u,%u,%u,%u).",
@@ -11436,7 +11491,12 @@ namespace cimg_library_suffixed {
         else std::memcpy((void*)_data,(void*)values,siz*sizeof(T));
       } else {
         T *new_data = 0;
-        try { new_data = new T[siz]; } catch (...) {
+        try { 
+#ifdef CIMG_MEM_DIAG
+			std::cout << "CImg(?) L" << __LINE__ << " " << siz * sizeof(T) << std::endl;
+#endif
+			new_data = new T[siz]; 
+		} catch (...) {
           _width = _height = _depth = _spectrum = 0; _data = 0;
           throw CImgInstanceException(_cimg_instance
                                       "assign(): Failed to allocate memory (%s) for image (%u,%u,%u,%u).",
@@ -11445,6 +11505,9 @@ namespace cimg_library_suffixed {
                                       size_x,size_y,size_z,size_c);
         }
         std::memcpy((void*)new_data,(void*)values,siz*sizeof(T));
+#ifdef CIMG_MEM_DIAG
+		std::cout << "delete CImg::assign L" << __LINE__ << " " << _width * _height * _depth * sizeof(T) << std::endl;
+#endif
         delete[] _data; _data = new_data; _width = size_x; _height = size_y; _depth = size_z; _spectrum = size_c;
       }
       return *this;
