@@ -286,11 +286,14 @@ namespace gip {
         CutlineTransformer oTransformer;
         if (feature.valid()) {
             OGRGeometry* site = feature.ogr_geometry();
-            // if imgout srs different than feature srs
-            OGRSpatialReference* srs = new OGRSpatialReference;
-            srs->SetFromUserInput(imgout.srs().c_str());
-            site->transformTo(srs);
-            OGRSpatialReference::DestroySpatialReference(srs);
+            
+			// if imgout srs different than feature srs
+			{
+				//Local scope for the refere-counted OGRSpatialReference object.
+				OGRSpatialReference srs; 
+				srs.SetFromUserInput(imgout.srs().c_str());
+				site->transformTo(&srs);
+			}
 
             // Create cutline transform to pixel coordinates        
             papszOptionsCutline = CSLSetNameValue( papszOptionsCutline, "DST_SRS", imgout.srs().c_str() );
