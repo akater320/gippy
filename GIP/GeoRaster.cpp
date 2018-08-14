@@ -168,9 +168,22 @@ namespace gip {
         float nd = nodata();
         vector<Chunk>::const_iterator iCh;
         vector<Chunk> _chunks = chunks();
+
+		unsigned int maxWidth(0), maxHeight(0);
+		for (const Chunk& ch : _chunks)
+		{
+			unsigned int paddedWidth = ch.width() + ch.padding() * 2;
+			unsigned int paddedHeight = ch.height() + ch.padding() * 2;
+			maxWidth = std::max(maxWidth, paddedWidth);
+			maxHeight = std::max(maxHeight, paddedHeight);
+		}
+
+		CImg<double> cimg(maxWidth, maxHeight);
+		CImg<float> noDataMask(maxWidth, maxHeight);
+
         unsigned int index;
-        for (iCh=_chunks.begin(); iCh!=_chunks.end(); iCh++) {
-            CImg<double> cimg = read<double>(*iCh);
+		for (const Chunk& ch : _chunks) {
+			read(ch, cimg, noDataMask);
             cimg_for(cimg,ptr,double) {
                 if (*ptr != nd) {
                     index = floor((*ptr-st(0))/(st(1)-st(0)) * bins);
@@ -282,15 +295,14 @@ namespace gip {
 
         // if valid geometry apply it as a cutline
 		OGRGeometry* site_t = nullptr;
+		OGRSpatialReference srs;
         char **papszOptionsCutline = NULL;
         CutlineTransformer oTransformer;
         if (feature.valid()) {
             OGRGeometry* site = feature.ogr_geometry();
-            // if imgout srs different than feature srs
-            OGRSpatialReference* srs = new OGRSpatialReference;
-            srs->SetFromUserInput(imgout.srs().c_str());
-            site->transformTo(srs);
-            OGRSpatialReference::DestroySpatialReference(srs);
+            // if imgout srs different than feature srs 
+            srs.SetFromUserInput(imgout.srs().c_str());
+            site->transformTo(&srs);
 
             // Create cutline transform to pixel coordinates        
             papszOptionsCutline = CSLSetNameValue( papszOptionsCutline, "DST_SRS", imgout.srs().c_str() );
