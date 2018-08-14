@@ -534,10 +534,8 @@ namespace gip {
 		}
 
 		//1.0 indicates "no data", by the gippy convention.
-		maskBuffer.assign(0.0);
 		cimg_forXY(target, x, y) {
-			if (target(x, y) == noDataVal)
-				maskBuffer = 1.0f;
+			maskBuffer(x, y) = (target(x, y) == noDataVal) ? 1.0f : 0.0f;
 		}
 	}
 
