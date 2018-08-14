@@ -43,6 +43,9 @@ namespace gip {
         friend class GeoImage;
 
     public:
+		const float NoDataValue = 1.0f;
+		const float ValidDataValue = 0.0f;
+
         typedef std::function< CImg<double>&(CImg<double>&) > func;
         //! \name Constructors/Destructors
         //! Copy constructor
@@ -526,7 +529,7 @@ namespace gip {
 		for (const auto& mask : _Masks) {
 			read_data(chunk, maskBuffer);
 			cimg_forXY(maskBuffer, x, y) {
-				//For a mask, 1 means "visible".
+				//For a mask, 1 means "visible". This is not necessarily consistent with the noDataMask values.
 				if (maskBuffer(x, y) != 1) {
 					target(x, y) = noDataVal;
 				}
@@ -535,7 +538,7 @@ namespace gip {
 
 		//1.0 indicates "no data", by the gippy convention.
 		cimg_forXY(target, x, y) {
-			maskBuffer(x, y) = (target(x, y) == noDataVal) ? 1.0f : 0.0f;
+			maskBuffer(x, y) = (target(x, y) == noDataVal) ? GeoRaster::NoDataValue : GeoRaster::ValidDataValue;
 		}
 	}
 
@@ -599,21 +602,19 @@ namespace gip {
 
 	template<class T> void GeoRaster::read(Chunk chunk, CImg<T>& img, CImg<float>& noDataMask, bool nogainoff) const 
 	{
-		//TODO: Update maskBuffer1 to a better name, making it explicit that it contains as useful mask.
 		auto start = std::chrono::system_clock::now();
 
-		//CImg<T> img(read_raw<T>(chunk)); //probably move-constructed. (AK)
 		read_raw(chunk, img, noDataMask);
 		//CImg<T> imgorig(img);
 
-		bool updatenodata = false;
+		//bool updatenodata = false;
 		// Apply gain and offset
 		if ((gain() != 1.0 || offset() != 0.0) && (!nogainoff)) {
 			//img = gain() * img + offset();
 			img *= gain();
 			img += offset();
 			// Update NoData now so applied functions have proper NoData value set (?)
-			updatenodata = true;
+			//updatenodata = true;
 		}
 
 		//TODO: Do this in place or add a buffer argument.
@@ -626,21 +627,21 @@ namespace gip {
 				//    std::cout << basename() << ": Applying function " << (*iFunc) << std::endl;
 				(*iFunc)(imgd);
 			}
-			updatenodata = true;
+			//updatenodata = true;
 			img.assign(imgd);
 		}
 
-		// If processing was applied update NoData values where needed
-		if (updatenodata) {
-			double sample;
-			double noDataVal = nodata();
-			cimg_forXY(img, x, y) {
-				//sampleOrig = static_cast<double>(imgorig(x, y));
-				sample = static_cast<double>(img(x, y));
-				if (noDataMask(x, y) != 1 || (std::is_floating_point<T>::value && (std::isinf(sample) || std::isnan(sample))))
-					img(x, y) = noDataVal;
-			}
-		}
+		//// If processing was applied update NoData values where needed
+		//if (updatenodata) {
+		//	double sample;
+		//	double noDataVal = nodata();
+		//	cimg_forXY(img, x, y) {
+		//		//sampleOrig = static_cast<double>(imgorig(x, y));
+		//		sample = static_cast<double>(img(x, y));
+		//		if (noDataMask(x, y) != 1 || (std::is_floating_point<T>::value && (std::isinf(sample) || std::isnan(sample))))
+		//			img(x, y) = noDataVal;
+		//	}
+		//}
 
 		auto elapsed = std::chrono::duration_cast<std::chrono::duration<float>>(std::chrono::system_clock::now() - start);
 		if (Options::verbose() > 3)

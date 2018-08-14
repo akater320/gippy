@@ -90,7 +90,7 @@ namespace gip {
         //CImg<double> cimg;
         double count(0), total(0), val;
         double min(type().maxval()), max(type().minval());
-        vector<Chunk>::const_iterator iCh;
+        //vector<Chunk>::const_iterator iCh;
         vector<Chunk> _chunks = chunks();
 
 		//Allocate all the memory we're going to need for this.
@@ -108,15 +108,17 @@ namespace gip {
 		CImg<double> target(maxWidth, maxHeight);
 		CImg<float> noDataMask(maxWidth, maxHeight);
 
-        for (iCh=_chunks.begin(); iCh!=_chunks.end(); iCh++) {
+		for (const Chunk& ch : _chunks) {
             //cimg = read<double>(*iCh);
-			read(*iCh, target, noDataMask);
-            cimg_for(target,ptr,double) {
-                if (*ptr != noDataVal) { 
-                    total += *ptr;
+			read(ch, target, noDataMask);
+            //cimg_for(target,ptr,double) {
+			cimg_forXY(target, x, y) {
+                if (noDataMask(x,y) != GeoRaster::NoDataValue) { 
+					double sample = target(x, y);
+                    total += sample;
                     count++;
-                    if (*ptr > max) max = *ptr;
-                    if (*ptr < min) min = *ptr;
+                    if (sample > max) max = sample;
+                    if (sample < min) min = sample;
                 }
             }
         }
@@ -124,12 +126,15 @@ namespace gip {
         total = 0;
         double total3(0);
 		//TODO: Don't do the entire read again. Just do this in the loop above?
-        for (iCh=_chunks.begin(); iCh!=_chunks.end(); iCh++) {
+        //for (iCh=_chunks.begin(); iCh!=_chunks.end(); iCh++) {
+		for (const Chunk& ch : _chunks) {
             //cimg = read<double>(*iCh);
-			read(*iCh, target, noDataMask);
-            cimg_for(target,ptr,double) {
-                if (*ptr != noDataVal) {
-                    val = *ptr-mean;
+			read(ch, target, noDataMask);
+            //cimg_for(target,ptr,double) {
+			cimg_forXY(target, x, y) {
+                if (noDataMask(x,y) != GeoRaster::NoDataValue) {
+					double sample = target(x, y);
+                    val = sample-mean;
                     total += (val*val);
                     total3 += (val*val*val);
                 }
@@ -165,7 +170,7 @@ namespace gip {
         CImg<float> st = stats();
         CImg<double> hist(bins,1,1,1,0);
         double numpixels(0);
-        float nd = nodata();
+        //float nd = nodata();
         vector<Chunk>::const_iterator iCh;
         vector<Chunk> _chunks = chunks();
 
@@ -184,9 +189,11 @@ namespace gip {
         unsigned int index;
 		for (const Chunk& ch : _chunks) {
 			read(ch, cimg, noDataMask);
-            cimg_for(cimg,ptr,double) {
-                if (*ptr != nd) {
-                    index = floor((*ptr-st(0))/(st(1)-st(0)) * bins);
+            //cimg_for(cimg,ptr,double) {
+			cimg_forXY(cimg, x,y) {
+                //if (*ptr != nd) {
+				if (noDataMask(x,y) != GeoRaster::NoDataValue) {
+                    index = floor((cimg(x,y)-st(0))/(st(1)-st(0)) * bins);
                     //std::cout << index << " " << hist[index] << " " << numpixels << std::endl;
                     // this would be due to floating point roundoff error
                     if (index==bins) {
