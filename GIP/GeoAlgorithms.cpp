@@ -465,7 +465,7 @@ namespace gip {
 
     GeoImage indices(const GeoImage& image, const vector<string>& products, string filename) {
 		using TImage = float;
-		using TNoData = float;
+		using TNoData = char;
 
 		enum struct ProductType : int {
 			NDVI,
