@@ -177,7 +177,7 @@ class _install(install):
 # GDAL config parameters
 gdal_config = CConfig(os.environ.get('GDAL_CONFIG', 'gdal-config'))
 
-extra_compile_args = ['-fPIC', '-O3', '-std=c++11']
+extra_compile_args = ['-fPIC', '-O3', '-std=c++14']
 
 if gdal_config.version()[0] == 2:
     extra_compile_args.append('-D GDAL2')
