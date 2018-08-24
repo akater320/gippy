@@ -43,8 +43,8 @@ namespace gip {
         friend class GeoImage;
 
     public:
-		const float NoDataValue = 1.0f;
-		const float ValidDataValue = 0.0f;
+		const char NoDataValue = 1;
+		const char ValidDataValue = 0;
 
         typedef std::function< CImg<double>&(CImg<double>&) > func;
         //! \name Constructors/Destructors
@@ -367,9 +367,9 @@ namespace gip {
 
         //! \name File I/O
         template<class T> CImg<T> read_raw(Chunk chunk=Chunk()) const;
-		template<class T> void read_raw(Chunk chunk, CImg<T>& target, CImg<float>& noDataBuffer) const;
+		template<class T> void read_raw(Chunk chunk, CImg<T>& target, CImg<char>& noDataBuffer) const;
         template<class T> CImg<T> read(Chunk chunk=Chunk(), bool nogainoff=false) const;
-		template<class T> void read(Chunk chunk, CImg<T>& target, CImg<float>& noDataBuffer, bool nogainoff = false) const;
+		template<class T> void read(Chunk chunk, CImg<T>& target, CImg<char>& noDataBuffer, bool nogainoff = false) const;
 		template<class T> void read_data(Chunk chunk, CImg<T>& target) const;
         template<class T> GeoRaster& write_raw(const CImg<T>& img, Chunk chunk=Chunk());
         template<class T> GeoRaster& write(const CImg<T>& img, Chunk chunk=Chunk());
@@ -490,7 +490,7 @@ namespace gip {
         return img;
     }
 
-	template<class T> void GeoRaster::read_raw(Chunk chunk, CImg<T>& target, CImg<float>& maskBuffer) const 
+	template<class T> void GeoRaster::read_raw(Chunk chunk, CImg<T>& target, CImg<char>& maskBuffer) const 
 	{
 		auto w(chunk.width()), h(chunk.height());
 
@@ -600,7 +600,7 @@ namespace gip {
         return img;
     }
 
-	template<class T> void GeoRaster::read(Chunk chunk, CImg<T>& img, CImg<float>& noDataMask, bool nogainoff) const 
+	template<class T> void GeoRaster::read(Chunk chunk, CImg<T>& img, CImg<char>& noDataMask, bool nogainoff) const 
 	{
 		auto start = std::chrono::system_clock::now();
 
@@ -717,7 +717,7 @@ namespace gip {
         //for (iCh=_chunks.begin(); iCh!=_chunks.end(); iCh++) {
 
 		CImg<T> imgBuffer(maxWidth, maxHeight);
-		CImg<float> noDataBuffer(maxWidth, maxHeight);
+		CImg<char> noDataBuffer(maxWidth, maxHeight);
 
 		double myNoDataVal = nodata();
 		double otherNoDataVal = raster.nodata();

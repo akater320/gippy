@@ -21,3 +21,5 @@ gippy/algorithms_wrap.cpp
 /Gippy.vcxproj.user
 /Gippy.vcxproj.filters
 /x64
+/SwigBindings.vcxproj.user
+/SwigBindings.vcxproj.filters

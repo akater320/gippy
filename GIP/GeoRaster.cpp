@@ -85,7 +85,7 @@ namespace gip {
         if (_ValidStats) return _Stats;
 
 		//nodata() uses a virtual function call and should be invariant during this function.
-		double noDataVal = nodata();
+		//double noDataVal = nodata();
 
         //CImg<double> cimg;
         double count(0), total(0), val;
@@ -106,7 +106,7 @@ namespace gip {
 
 		//2. Allocate the CImg objects.
 		CImg<double> target(maxWidth, maxHeight);
-		CImg<float> noDataMask(maxWidth, maxHeight);
+		CImg<char> noDataMask(maxWidth, maxHeight);
 
 		for (const Chunk& ch : _chunks) {
             //cimg = read<double>(*iCh);
@@ -115,7 +115,7 @@ namespace gip {
 			cimg_forXY(target, x, y) {
                 if (noDataMask(x,y) != GeoRaster::NoDataValue) { 
 					double sample = target(x, y);
-                    total += sample;
+                    total += sample; //OVERFLOW RISK!!??
                     count++;
                     if (sample > max) max = sample;
                     if (sample < min) min = sample;
@@ -168,7 +168,7 @@ namespace gip {
     CImg<double> GeoRaster::histogram(unsigned int bins, bool normalize, bool cumulative) const {
         //CImg<double> cimg;
         CImg<float> st = stats();
-        CImg<double> hist(bins,1,1,1,0);
+        CImg<double> hist(bins+1,1,1,1,0);
         double numpixels(0);
         //float nd = nodata();
         vector<Chunk>::const_iterator iCh;
@@ -184,7 +184,11 @@ namespace gip {
 		}
 
 		CImg<double> cimg(maxWidth, maxHeight);
-		CImg<float> noDataMask(maxWidth, maxHeight);
+		CImg<char> noDataMask(maxWidth, maxHeight);
+
+		double stMin = st(0);
+		double stMax = st(1);
+		double scaleFactor = bins / (stMax - stMin);
 
         unsigned int index;
 		for (const Chunk& ch : _chunks) {
@@ -193,21 +197,22 @@ namespace gip {
 			cimg_forXY(cimg, x,y) {
                 //if (*ptr != nd) {
 				if (noDataMask(x,y) != GeoRaster::NoDataValue) {
-                    index = floor((cimg(x,y)-st(0))/(st(1)-st(0)) * bins);
+					index = static_cast<unsigned int>((cimg(x,y) - stMin) * scaleFactor); //floor((cimg(x,y)-st(0))/(st(1)-st(0)) * bins);
                     //std::cout << index << " " << hist[index] << " " << numpixels << std::endl;
                     // this would be due to floating point roundoff error
-                    if (index==bins) {
-                        index = bins-1;
-                    }
-                    else if (index > bins) {
-                        index = 0;
-                    }
-                    hist[index] = hist[index]+1;
+                    //if (index==bins) {
+                    //    index = bins-1;
+                    //}
+                    //else if (index > bins) {
+                    //    index = 0;
+                    //}
+					hist[index] += 1;//hist[index] = hist[index]+1;
                     numpixels++;
                     //std::cout << index << " " << hist[index] << " " << numpixels << std::endl;
                 }
             }
         }
+		hist[bins - 1] += hist[bins];
         // normalize
         if (normalize)
             hist/=numpixels;
