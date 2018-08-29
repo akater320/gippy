@@ -83,7 +83,7 @@ namespace gip {
 		//Calculations are always done as doubles. 
 		switch (this->type().gdal()) 
 		{
-		case GDT_Byte: return stats_impl<int_least8_t>();
+		case GDT_Byte: return stats_impl<uint_least8_t>();
 		case GDT_UInt16: return stats_impl<uint_least16_t>();
 		case GDT_Int16: return stats_impl<int_least16_t>();
 		case GDT_UInt32: return stats_impl<uint_least32_t>();
@@ -114,7 +114,7 @@ namespace gip {
     CImg<double> GeoRaster::histogram(unsigned int bins, bool normalize, bool cumulative) const {
 		switch (this->type().gdal())
 		{
-		case GDT_Byte: return histogram_impl<int_least8_t>(bins, normalize, cumulative);
+		case GDT_Byte: return histogram_impl<uint_least8_t>(bins, normalize, cumulative);
 		case GDT_UInt16: return histogram_impl<uint_least16_t>(bins, normalize, cumulative);
 		case GDT_Int16: return histogram_impl<int_least16_t>(bins, normalize, cumulative);
 		case GDT_UInt32: return histogram_impl<uint_least32_t>(bins, normalize, cumulative);
