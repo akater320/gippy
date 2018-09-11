@@ -36,7 +36,7 @@ namespace gip {
     typedef Rect<double> BoundingBox;
 
     //! Base class representing a geospatial resource
-    class GeoResource {
+    class CPL_DLL GeoResource {
     public:
         //! \name Constructors
         //! Default constructor

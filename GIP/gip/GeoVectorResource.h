@@ -31,7 +31,7 @@
 
 namespace gip {
 
-    class GeoVectorResource {
+    class CPL_DLL GeoVectorResource {
     public:
 
         //! \name Constructors/Destructors

@@ -39,7 +39,7 @@ namespace gip {
     /*!
         The GeoImage is a collection of GeoRaster objects
     */
-    class GeoImage : public GeoResource {
+    class CPL_DLL GeoImage : public GeoResource {
     public:
         //! \name Constructors/Destructor
         //! Default constructor

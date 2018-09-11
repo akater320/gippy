@@ -30,6 +30,31 @@ namespace gip {
     int Options::_Verbose(1);
     int Options::_Cores(2);
 
+	std::string Options::defaultformat() { return _DefaultFormat; }
+
+	void Options::set_defaultformat(std::string str) { _DefaultFormat = str; }
+
+	float Options::chunksize() { return _ChunkSize; }
+
+	void Options::set_chunksize(float sz) { _ChunkSize = sz; }
+
+	int Options::verbose() { return _Verbose; }
+
+	void Options::set_verbose(int v) {
+		_Verbose = v;
+		if (v > 4) {
+			// turn on GDAL output
+			CPLPushErrorHandler(CPLDefaultErrorHandler);
+		}
+		else {
+			CPLPushErrorHandler(CPLQuietErrorHandler);
+		}
+	}
+
+	int Options::cores() { return _Cores; }
+
+	void Options::set_cores(int n) { _Cores = n; }
+
     // Register file formats with GDAL and OGR
     void init() {
         GDALAllRegister();

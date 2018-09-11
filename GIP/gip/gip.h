@@ -47,7 +47,7 @@ namespace gip {
 
     typedef std::map<std::string, std::string> dictionary;
 
-    void init();
+    void CPL_DLL init();
 
     template<typename T> inline void cimg_print(cimg_library::CImg<T> & img, std::string title="") {
         for (int i=0; i<img.height(); i++) {
@@ -57,7 +57,7 @@ namespace gip {
         }
     }
 
-    class Options {
+    class CPL_DLL Options {
     public:
         // \name Global Options (static properties)
         //! Get Config directory
@@ -65,29 +65,21 @@ namespace gip {
         //! Set Config directory
         //static void SetConfigDir(std::string dir) { _ConfigDir = dir; }
         //! Default format when creating new files
-        static std::string defaultformat() { return _DefaultFormat; }
+		static std::string defaultformat();
         //! Set default format when creating new files
-        static void set_defaultformat(std::string str) { _DefaultFormat = str; }
+		static void set_defaultformat(std::string str);
         //! Default chunk size when chunking an image
-        static float chunksize() { return _ChunkSize; }
+		static float chunksize();
         //! Set chunk size, used when chunking an image
-        static void set_chunksize(float sz) { _ChunkSize = sz; }
+		static void set_chunksize(float sz);
         //! Get verbose level
-        static int verbose() { return _Verbose; }
+		static int verbose();
         //! Set verbose level
-        static void set_verbose(int v) { 
-            _Verbose = v;
-            if (v > 4) {
-                // turn on GDAL output
-                CPLPushErrorHandler(CPLDefaultErrorHandler);
-            } else {
-                CPLPushErrorHandler(CPLQuietErrorHandler);
-            }
-        }
+		static void set_verbose(int v);
         //! Get desired number of cores
-        static int cores() { return _Cores; }
+		static int cores();
         //! Set desired number of cores
-        static void set_cores(int n) { _Cores = n; }
+		static void set_cores(int n);
 
     private:
         // global options

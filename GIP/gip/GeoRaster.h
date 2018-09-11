@@ -39,7 +39,7 @@ namespace gip {
     /*!
         The GeoRaster class wraps the GDALRasterBand class
     */
-    class GeoRaster : public GeoResource {
+    class CPL_DLL GeoRaster : public GeoResource {
         friend class GeoImage;
 
     public:

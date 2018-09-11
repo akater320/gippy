@@ -49,35 +49,35 @@ namespace gip {
     }; */
 
     //! Create cloudmask using ACCA
-    GeoImage acca(const GeoImage&, std::string filename, float, float, int = 5, int = 10, int = 4000);
+	CPL_DLL  GeoImage acca(const GeoImage&, std::string filename, float, float, int = 5, int = 10, int = 4000);
 
     //! Create new file with a Fmask cloud mask
-    GeoImage fmask(const GeoImage& geoimg, std::string filename, int=3, int=5);
+	CPL_DLL GeoImage fmask(const GeoImage& geoimg, std::string filename, int=3, int=5);
 
     //! Create single image from multiple input images using vector file footprint
-    GeoImage cookie_cutter(const std::vector<GeoImage>& geoimgs, std::string filename="",
+	CPL_DLL GeoImage cookie_cutter(const std::vector<GeoImage>& geoimgs, std::string filename="",
         GeoFeature feature=GeoFeature(), bool crop=false, std::string proj="",
         float xres=1.0, float yres=1.0, int interpolation=0, dictionary options=dictionary());
 
     //! Kmeans
-    GeoImage kmeans(const GeoImage&, std::string, unsigned int classes=5, unsigned int iterations=5,
+	CPL_DLL GeoImage kmeans(const GeoImage&, std::string, unsigned int classes=5, unsigned int iterations=5,
                     float threshold=1.0, unsigned int num_random=500);
 
     //! Create indices in one pass: NDVI, EVI, LSWI, NDSI, BI {product, filename}
-    GeoImage indices(const GeoImage& geoimg, std::vector<std::string> products, std::string filename="");
+	CPL_DLL GeoImage indices(const GeoImage& geoimg, std::vector<std::string> products, std::string filename="");
 
     //! Create output based on linear combinations of input
-    GeoImage linear_transform(const GeoImage& geoimg, CImg<float> coef, std::string filename);
+	CPL_DLL GeoImage linear_transform(const GeoImage& geoimg, CImg<float> coef, std::string filename);
 
     //! Pansharpen all bands in a GeoImage with a pan band
-    GeoImage pansharp_brovey(const GeoImage& geoimg, const GeoImage& panimg,
+	CPL_DLL GeoImage pansharp_brovey(const GeoImage& geoimg, const GeoImage& panimg,
                              CImg<float> weights=CImg<float>(), std::string filename="");
 
     //! Runs the RX Detector (RXD) anamoly detection algorithm
-    GeoImage rxd(const GeoImage& geoimg, std::string filename="");
+	CPL_DLL GeoImage rxd(const GeoImage& geoimg, std::string filename="");
 
     //! Calculate spectral statistics and output to new image
-    GeoImage spectral_statistics(const GeoImage&, std::string filename="");
+	CPL_DLL GeoImage spectral_statistics(const GeoImage&, std::string filename="");
 
     //! Spectral Matched Filter
     //GeoImage SMF(const GeoImage& image, std::string, CImg<double>);
