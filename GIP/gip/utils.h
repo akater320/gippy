@@ -62,7 +62,6 @@ namespace gip {
 
     inline std::string random_filename() {
         std::string filename = std::tmpnam(nullptr);    
-        std::replace( filename.begin(), filename.end(), '.', '_');
         return filename;
     }
 
