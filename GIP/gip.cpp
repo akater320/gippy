@@ -62,4 +62,10 @@ namespace gip {
         CPLPushErrorHandler(CPLQuietErrorHandler);
     }
 
+#ifdef WIN32
+	//The entry point that setuptools exports.
+	void PyInit_libgip() {}
+#endif // WIN32
+
+
 } // namespace gip

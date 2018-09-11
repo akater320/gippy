@@ -114,8 +114,12 @@ class _build_ext(build_ext):
             # know where to find libgip for linking
             m.library_dirs.append(os.path.join(self.build_lib, 'gippy'))
             # on linux add to rpath
-            if sys.platform != 'darwin':
+            if sys.platform.startswith('linux'):
                 m.runtime_library_dirs.append('$ORIGIN')
+            elif sys.platform.startswith('win32'):
+                #On Windows, the dll will have an architecture specific name.
+                m.library_dirs.append(os.path.join(self.build_temp, 'GIP'))
+                m.libraries.append(gip_module._file_name.rsplit('.', 1)[0])
 
         # in python3 the created .so files have names tagged to version, see PEP 3147, 3149
         if sysconfig.get_config_var('SOABI') is not None:
@@ -173,21 +177,81 @@ class _install(install):
 #        self.run_command('build_ext')
 #        bdist_wheel.run(self)
 
+extra_compile_args=[]
+extra_link_args=[]
+gdal_major_version=-1
+lib_dirs=[]
+include_dirs=['GIP', numpy_get_include()]
+extra_libs=[]
 
 # GDAL config parameters
-gdal_config = CConfig(os.environ.get('GDAL_CONFIG', 'gdal-config'))
+# On UNIX like systems, the gdal-config script will contain some relevant compile/link settings.
+try:
+    gdal_config = CConfig(os.environ.get('GDAL_CONFIG', 'gdal-config'))
 
-extra_compile_args = ['-fPIC', '-O3', '-std=c++11']
+    gdal_major_version=int(gdal_config.version()[0])
 
-if gdal_config.version()[0] == 2:
-    extra_compile_args.append('-D GDAL2')
+    extra_link_args.extend(gdal_config.extra_link_args)
+    lib_dirs.extend(gdal_config.lib_dirs)
+    # not sure if current directory is necessary here
+    lib_dirs.append('./')
+    include_dirs.extend(gdal_config.include)
+    extra_libs.extend(gdal_config.libs)
+except:
+    pass #fine. Some systems won't have this script.
 
-extra_link_args = gdal_config.extra_link_args
+#Add any additional parameters provided by the user.
+#GDAL version. This will overwrite the value from gdal-config.
+if '--gdalversion' in sys.argv:
+    index = sys.argv.index('--gdalversion')
+    sys.argv.pop(index)
+    gdal_major_version = int(sys.argv.pop(index).split('.')[0])
+    log.info("GDAL API version obtained from command line option: %s", gdal_major_version)
 
-# not sure if current directory is necessary here
-lib_dirs = gdal_config.lib_dirs + ['./']
+#Include directories.
+includeDirsToken = '--include-dirs'
+if includeDirsToken in sys.argv:
+    index = sys.argv.index(includeDirsToken)
+    sys.argv.pop(index) #pop the token
+    include_dirs.extend(sys.argv.pop(index).split(';'))
 
-if sys.platform == 'darwin':
+#Library directories
+libDirsToken = '--lib-dirs'
+if libDirsToken in sys.argv:
+    index = sys.argv.index(libDirsToken)
+    sys.argv.pop(index) #pop the token
+    lib_dirs.extend(sys.argv.pop(index).split(';'))
+
+#Libraries
+libsToken = '--libs'
+if libsToken in sys.argv:
+    index = sys.argv.index(libsToken)
+    sys.argv.pop(index) #pop the token
+    extra_libs.extend(sys.argv.pop(index).split(';'))
+
+#Make sure we have enough info to continue
+if gdal_major_version < 0:
+    log.fatal('GDAL version must be specified by gdal-config or --gdalversion.')
+    sys.exit(1)
+
+#Do all the platform specific stuff.
+#TODO: Add other platforms. BSD, CygWin...
+if sys.platform.startswith('linux'):
+    extra_libs.append('pthread')
+    extra_compile_args.extend(['-fPIC', '-O3', '-std=c++11'])
+    extra_compile_args.append('-DGDAL'+str(gdal_major_version))
+     # Remove the "-Wstrict-prototypes" compiler option that swig adds, which isn't valid for C++.
+    cfg_vars = sysconfig.get_config_vars()
+    for key, value in cfg_vars.items():
+        if type(value) == str:
+            cfg_vars[key] = value.replace("-Wstrict-prototypes", "")
+    extra_compile_args.append('-Wno-maybe-uninitialized')
+    extra_libs.append('GIP')
+elif sys.platform.startswith('darwin'):
+    extra_libs.append('pthread')
+    extra_compile_args.extend(['-fPIC', '-O3', '-std=c++11'])
+    extra_compile_args.append('-DGDAL'+str(gdal_major_version))
+
     extra_compile_args.append('-stdlib=libc++')
     extra_link_args.append('-stdlib=libc++')
 
@@ -205,48 +269,50 @@ if sys.platform == 'darwin':
     extra_compile_args.append('-Wno-shift-negative-value')
     extra_compile_args.append('-Wno-parentheses-equality')
     extra_compile_args.append('-Wno-deprecated-declarations')
-else:
-    # Remove the "-Wstrict-prototypes" compiler option that swig adds, which isn't valid for C++.
-    cfg_vars = sysconfig.get_config_vars()
-    for key, value in cfg_vars.items():
-        if type(value) == str:
-            cfg_vars[key] = value.replace("-Wstrict-prototypes", "")
-    extra_compile_args.append('-Wno-maybe-uninitialized')
+    extra_libs.append('GIP')
+elif sys.platform.startswith('win32'):
+    extra_compile_args.append('/DGDAL'+str(gdal_major_version))
+    extra_libs.append('gdal_i')
+    extra_libs.append('shell32')
+    pass
+
 
 # the libgip.so module containing all the C++ code
 gip_module = Extension(
-    name=os.path.join("gippy", "libgip"),
+    name="libgip",#os.path.join("gippy", "libgip"),
     sources=glob.glob('GIP/*.cpp'),
-    include_dirs=['GIP', numpy_get_include()] + gdal_config.include,
-    library_dirs=lib_dirs,
-    libraries=[
-        'pthread'
-    ] + gdal_config.libs,
-    extra_compile_args=extra_compile_args,
-    extra_link_args=extra_link_args
+    include_dirs=include_dirs.copy(),
+    library_dirs=lib_dirs.copy(),
+    libraries=extra_libs.copy(),
+    extra_compile_args=extra_compile_args.copy(),
+    extra_link_args=extra_link_args.copy()
 )
 
 # the swig .so modules containing the C++ code that wraps libgip.so
 swig_modules = []
+swig_opts=['-c++', '-w509', '-w511', '-w315', '-IGIP', '-fcompact', '-fvirtual', '-keyword']
+
+if sys.platform.startswith('win32'):
+    extra_compile_args.append('/DCPL_DISABLE_DLL')
+    extra_compile_args.append('/wd4576') #suppress an error
+    swig_opts.append('-DCPL_DLL')
+
 for n in ['gippy', 'algorithms']:
     src = os.path.join('gippy', n + '.i')
     cppsrc = os.path.join('gippy', n + '_wrap.cpp')
     src = cppsrc if os.path.exists(cppsrc) else src
     swig_modules.append(
         Extension(
-            name=os.path.join('gippy', '_' + n),
+            name='_'+n,#os.path.join('gippy', '_' + n),
             sources=[src],
-            swig_opts=['-c++', '-w509', '-w511', '-w315', '-IGIP', '-fcompact', '-fvirtual', '-keyword'],
-            include_dirs=['GIP', numpy_get_include()] + gdal_config.include,
-            library_dirs=lib_dirs,
-            libraries=[
-                'gip', 'pthread'
-            ] + gdal_config.libs,
-            extra_compile_args=extra_compile_args,
-            extra_link_args=extra_link_args
+            swig_opts=swig_opts.copy(),
+            include_dirs=include_dirs.copy(),
+            library_dirs=lib_dirs.copy(),
+            libraries=extra_libs.copy(),
+            extra_compile_args=extra_compile_args.copy(),
+            extra_link_args=extra_link_args.copy()
         )
     )
-
 
 setup(
     name='gippy',
