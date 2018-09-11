@@ -123,6 +123,7 @@ namespace gip {
             _GDALDataset->FlushCache();
             //BOOST_LOG_TRIVIAL(trace) << Basename() << ": ~GeoResource (use_count = " << _GDALDataset.use_count() << ")" << std::endl;
             if (Options::verbose() > 4) std::cout << basename() << ": ~GeoResource (use_count = " << _GDALDataset.use_count() << ")" << std::endl;
+			_GDALDataset.reset();
             if (_temp) {
                 std::remove(_Filename.c_str());
             }
