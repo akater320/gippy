@@ -246,7 +246,6 @@ if sys.platform.startswith('linux'):
         if type(value) == str:
             cfg_vars[key] = value.replace("-Wstrict-prototypes", "")
     extra_compile_args.append('-Wno-maybe-uninitialized')
-    extra_libs.append('GIP')
 elif sys.platform.startswith('darwin'):
     extra_libs.append('pthread')
     extra_compile_args.extend(['-fPIC', '-O3', '-std=c++11'])
@@ -269,7 +268,6 @@ elif sys.platform.startswith('darwin'):
     extra_compile_args.append('-Wno-shift-negative-value')
     extra_compile_args.append('-Wno-parentheses-equality')
     extra_compile_args.append('-Wno-deprecated-declarations')
-    extra_libs.append('GIP')
 elif sys.platform.startswith('win32'):
     extra_compile_args.append('/DGDAL'+str(gdal_major_version))
     extra_libs.append('gdal_i')
@@ -281,21 +279,23 @@ elif sys.platform.startswith('win32'):
 gip_module = Extension(
     name="libgip",#os.path.join("gippy", "libgip"),
     sources=glob.glob('GIP/*.cpp'),
-    include_dirs=include_dirs.copy(),
-    library_dirs=lib_dirs.copy(),
-    libraries=extra_libs.copy(),
-    extra_compile_args=extra_compile_args.copy(),
-    extra_link_args=extra_link_args.copy()
+    include_dirs=include_dirs[:],
+    library_dirs=lib_dirs[:],
+    libraries=extra_libs[:],
+    extra_compile_args=extra_compile_args[:],
+    extra_link_args=extra_link_args[:]
 )
 
 # the swig .so modules containing the C++ code that wraps libgip.so
 swig_modules = []
+#SWIG uses gcc style preprocessor definitions on all systems.
 swig_opts=['-c++', '-w509', '-w511', '-w315', '-IGIP', '-fcompact', '-fvirtual', '-keyword']
-
+#Disable the dellexport(MSVC) or visibility(gcc) definitions.
+swig_opts.append('-DCPL_DLL') 
 if sys.platform.startswith('win32'):
     extra_compile_args.append('/DCPL_DISABLE_DLL')
-    extra_compile_args.append('/wd4576') #suppress an error
-    swig_opts.append('-DCPL_DLL')
+    extra_compile_args.append('/wd4576') #suppress this error
+#TODO: Consider using fvisibility=hidden with gcc.
 
 for n in ['gippy', 'algorithms']:
     src = os.path.join('gippy', n + '.i')
@@ -305,12 +305,12 @@ for n in ['gippy', 'algorithms']:
         Extension(
             name='_'+n,#os.path.join('gippy', '_' + n),
             sources=[src],
-            swig_opts=swig_opts.copy(),
-            include_dirs=include_dirs.copy(),
-            library_dirs=lib_dirs.copy(),
-            libraries=extra_libs.copy(),
-            extra_compile_args=extra_compile_args.copy(),
-            extra_link_args=extra_link_args.copy()
+            swig_opts=swig_opts[:],
+            include_dirs=include_dirs[:],
+            library_dirs=lib_dirs[:],
+            libraries=extra_libs[:],
+            extra_compile_args=extra_compile_args[:],
+            extra_link_args=extra_link_args[:]
         )
     )
 
