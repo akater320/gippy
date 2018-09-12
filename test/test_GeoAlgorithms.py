@@ -35,12 +35,16 @@ class GeoAlgorithmsTests(unittest.TestCase):
         self.assertAlmostEqual(imgout.resolution().x(), panimg.resolution().x(), places=1)
         self.assertAlmostEqual(imgout.resolution().y(), panimg.resolution().y(), places=1)
         self.assertEqual(imgout.nbands(), 4)
+        imgout=None
         os.remove(fout)
         geoimg = gpt.get_test_image().select(['red', 'green', 'blue'])
         imgout = alg.pansharp_brovey(geoimg, panimg, filename=fout)
         self.assertEqual(imgout.nbands(), 3)
         self.assertAlmostEqual(imgout.resolution().x(), panimg.resolution().x(), places=1)
         self.assertAlmostEqual(imgout.resolution().y(), panimg.resolution().y(), places=1)
+        geoimg=None
+        imgout=None
+        panimg=None
         os.remove(fout)
 
     def test_cookiecutter(self):
@@ -126,6 +130,8 @@ class GeoAlgorithmsTests(unittest.TestCase):
         # add color ramp for positive values
         imgout[0].add_colortable(white, green, value1=128, value2=255)
         # TODO - actually test something here
+        geoimg=None
+        imgout=None
         os.remove(fout)
 
     def test_ndvi_numpy(self):

@@ -35,6 +35,7 @@ class GeoImageTests(unittest.TestCase):
         res = geoimg.resolution()
         self.assertEqual(res.x(), 1.0/geoimg.xsize())
         self.assertEqual(res.y(), -1.0/geoimg.ysize())
+        geoimg=None
         os.remove(fout)
 
     def test_read(self):
@@ -57,6 +58,7 @@ class GeoImageTests(unittest.TestCase):
         self.assertTrue(os.path.exists(fout))
         arr = geoimg.read()
         self.assertEqual(str(arr.dtype), geoimg.type().string())
+        geoimg=None
         os.remove(fout)
 
     def test_loop_through_bands(self):
@@ -98,6 +100,7 @@ class GeoImageTests(unittest.TestCase):
         geoimg[0].write(deepcopy(arr))
         arrout = geoimg[0].read()
         np.testing.assert_array_equal(arr, arrout)
+        geoimg = None
         os.remove(fout)
 
     def test_create_multiband(self):
@@ -160,6 +163,7 @@ class GeoImageTests(unittest.TestCase):
         geoimg = gp.GeoImage(fout, False)
         geoimg.add_overviews()
         self.assertTrue(os.path.exists(fout + '.ovr'))
+        geoimg=None
         os.remove(fout)
         os.remove(fout + '.ovr')
 
@@ -172,6 +176,7 @@ class GeoImageTests(unittest.TestCase):
         self.assertEqual(geoimg.type().string(), 'uint8')
         self.assertEqual(geoimg[0].min(), 1.0)
         self.assertEqual(geoimg[0].max(), 255.0)
+        geoimg=None
         os.remove(fout)
 
     def test_save_with_gain(self):
@@ -181,6 +186,8 @@ class GeoImageTests(unittest.TestCase):
         fout = 'test-savegain.tif'
         imgout = geoimg.save(fout)
         assert_array_equal(imgout.read(), geoimg.read())
+        geoimg=None
+        imgout=None
         os.remove(fout)
 
     def test_warp(self):
@@ -202,6 +209,8 @@ class GeoImageTests(unittest.TestCase):
         imgout = geoimg.warp(fout, proj='EPSG:4326', xres=0.0003, yres=0.0003)
         self.assertEqual(imgout.xsize(), 653)
         self.assertEqual(imgout.ysize(), 547)
+        geoimg=None
+        imgout=None
         os.remove(fout)
 
     def test_warp_into(self):

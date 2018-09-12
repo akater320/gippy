@@ -46,6 +46,7 @@ class GeoRasterTests(unittest.TestCase):
         for i in range(0, 3):
             self.assertEqual(geoimg[i].description(), bandnames[i])
             self.assertEqual(geoimg[i].basename(), '%s[%s]' % (bname, i))
+        geoimg=None
         os.remove(fout)
         # TODO - test color
 
@@ -65,6 +66,7 @@ class GeoRasterTests(unittest.TestCase):
         for i in range(0, 2):
             self.assertEqual(geoimg[i].gain(), gains[i])
             self.assertEqual(geoimg[i].offset(), offsets[i])
+        geoimg=None
         os.remove(fout)
 
     def test_nodata(self):
@@ -80,6 +82,7 @@ class GeoRasterTests(unittest.TestCase):
         arr = np.where(geoimg.read() == np.nan)
         self.assertEqual(len(arr[0]), 0)
         self.assertEqual(len(arr[1]), 0)
+        geoimg=None
         os.remove(fout)
 
     def test_bandmeta(self):
@@ -90,6 +93,7 @@ class GeoRasterTests(unittest.TestCase):
         geoimg = None
         geoimg = gp.GeoImage(fout)
         self.assertEqual(geoimg[0].bandmeta('TESTKEY'), 'TESTVALUE')
+        geoimg=None
         os.remove(fout)
 
     # TODO - test masking
